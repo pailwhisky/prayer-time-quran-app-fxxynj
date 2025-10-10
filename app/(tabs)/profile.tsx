@@ -1,91 +1,262 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Platform } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { IconSymbol } from "@/components/IconSymbol";
-import { GlassView } from "expo-glass-effect";
-import { useTheme } from "@react-navigation/native";
+
+import React from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Platform,
+  Alert,
+  Pressable,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Stack } from 'expo-router';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors } from '@/styles/commonStyles';
 
 export default function ProfileScreen() {
-  const theme = useTheme();
+  const handleNotificationSettings = () => {
+    Alert.alert(
+      'Notification Settings',
+      'Prayer notifications are managed automatically. Make sure notifications are enabled in your device settings.',
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleAbout = () => {
+    Alert.alert(
+      'About Prayer Times',
+      'This app calculates Islamic prayer times based on your location using astronomical calculations. The Qibla direction points towards the Kaaba in Mecca.\n\nMay Allah accept your prayers.',
+      [{ text: 'Ameen' }]
+    );
+  };
+
+  const handleFeedback = () => {
+    Alert.alert(
+      'Feedback',
+      'We value your feedback to improve this app. Please share your thoughts and suggestions.',
+      [{ text: 'OK' }]
+    );
+  };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <ScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.contentContainer,
-          Platform.OS !== 'ios' && styles.contentContainerWithTabBar
-        ]}
-      >
-        <GlassView style={[
-          styles.profileHeader,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <IconSymbol name="person.circle.fill" size={80} color={theme.colors.primary} />
-          <Text style={[styles.name, { color: theme.colors.text }]}>John Doe</Text>
-          <Text style={[styles.email, { color: theme.dark ? '#98989D' : '#666' }]}>john.doe@example.com</Text>
-        </GlassView>
+    <>
+      <Stack.Screen
+        options={{
+          title: 'Settings',
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.text,
+        }}
+      />
+      <SafeAreaView style={styles.container}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.iconContainer}>
+              <IconSymbol name="moon.stars.fill" size={60} color={colors.primary} />
+            </View>
+            <Text style={styles.appName}>Prayer Times</Text>
+            <Text style={styles.appDescription}>
+              Islamic prayer times and Qibla direction
+            </Text>
+          </View>
 
-        <GlassView style={[
-          styles.section,
-          Platform.OS !== 'ios' && { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)' }
-        ]} glassEffectStyle="regular">
-          <View style={styles.infoRow}>
-            <IconSymbol name="phone.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>+1 (555) 123-4567</Text>
+          {/* Settings Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Settings</Text>
+            
+            <Pressable style={styles.settingItem} onPress={handleNotificationSettings}>
+              <View style={styles.settingLeft}>
+                <IconSymbol name="bell.fill" size={24} color={colors.primary} />
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>Notifications</Text>
+                  <Text style={styles.settingSubtitle}>Prayer time reminders</Text>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+            </Pressable>
           </View>
-          <View style={styles.infoRow}>
-            <IconSymbol name="location.fill" size={20} color={theme.dark ? '#98989D' : '#666'} />
-            <Text style={[styles.infoText, { color: theme.colors.text }]}>San Francisco, CA</Text>
+
+          {/* Information Section */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Information</Text>
+            
+            <Pressable style={styles.settingItem} onPress={handleAbout}>
+              <View style={styles.settingLeft}>
+                <IconSymbol name="info.circle.fill" size={24} color={colors.primary} />
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>About</Text>
+                  <Text style={styles.settingSubtitle}>App information and calculations</Text>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+            </Pressable>
+
+            <Pressable style={styles.settingItem} onPress={handleFeedback}>
+              <View style={styles.settingLeft}>
+                <IconSymbol name="heart.fill" size={24} color={colors.highlight} />
+                <View style={styles.settingTextContainer}>
+                  <Text style={styles.settingTitle}>Feedback</Text>
+                  <Text style={styles.settingSubtitle}>Help us improve the app</Text>
+                </View>
+              </View>
+              <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
+            </Pressable>
           </View>
-        </GlassView>
-      </ScrollView>
-    </SafeAreaView>
+
+          {/* Prayer Times Info */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Prayer Time Calculations</Text>
+            <Text style={styles.infoText}>
+              Prayer times are calculated using astronomical methods based on your geographic location. 
+              The calculations follow standard Islamic conventions:
+            </Text>
+            <View style={styles.infoList}>
+              <Text style={styles.infoListItem}>• Fajr: 18° below horizon</Text>
+              <Text style={styles.infoListItem}>• Dhuhr: Solar noon</Text>
+              <Text style={styles.infoListItem}>• Asr: Shadow length method</Text>
+              <Text style={styles.infoListItem}>• Maghrib: Sunset</Text>
+              <Text style={styles.infoListItem}>• Isha: 18° below horizon</Text>
+            </View>
+          </View>
+
+          {/* Qibla Info */}
+          <View style={styles.infoCard}>
+            <Text style={styles.infoTitle}>Qibla Direction</Text>
+            <Text style={styles.infoText}>
+              The Qibla compass points towards the Kaaba in Mecca, Saudi Arabia. 
+              For accurate readings, hold your device flat and away from magnetic interference.
+            </Text>
+          </View>
+
+          {/* Bottom spacing */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    // backgroundColor handled dynamically
-  },
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  contentContainer: {
-    padding: 20,
+  scrollView: {
+    flex: 1,
   },
-  contentContainerWithTabBar: {
-    paddingBottom: 100, // Extra padding for floating tab bar
+  scrollContent: {
+    paddingHorizontal: 16,
   },
-  profileHeader: {
+  header: {
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 32,
+    paddingVertical: 30,
+    marginBottom: 20,
+  },
+  iconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.card,
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 16,
-    gap: 12,
+    borderWidth: 2,
+    borderColor: colors.border,
+    boxShadow: `0px 4px 8px ${colors.shadow}`,
+    elevation: 3,
   },
-  name: {
-    fontSize: 24,
+  appName: {
+    fontSize: 28,
     fontWeight: 'bold',
-    // color handled dynamically
+    color: colors.text,
+    marginBottom: 8,
   },
-  email: {
+  appDescription: {
     fontSize: 16,
-    // color handled dynamically
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
   },
   section: {
-    borderRadius: 12,
-    padding: 20,
-    gap: 12,
+    marginBottom: 24,
   },
-  infoRow: {
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+  },
+  settingItem: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: `0px 2px 4px ${colors.shadow}`,
+    elevation: 2,
+  },
+  settingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  settingTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  settingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: 2,
+  },
+  settingSubtitle: {
+    fontSize: 14,
+    color: colors.textSecondary,
+  },
+  infoCard: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderLeftWidth: 4,
+    borderLeftColor: colors.accent,
+    boxShadow: `0px 4px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  infoTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
   },
   infoText: {
-    fontSize: 16,
-    // color handled dynamically
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  infoList: {
+    marginLeft: 8,
+  },
+  infoListItem: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 4,
+  },
+  bottomSpacing: {
+    height: Platform.OS === 'ios' ? 20 : 100,
   },
 });

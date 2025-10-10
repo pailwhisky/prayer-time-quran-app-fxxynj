@@ -1,3 +1,4 @@
+
 import "react-native-reanimated";
 import React, { useEffect } from "react";
 import { useFonts } from "expo-font";
@@ -16,6 +17,15 @@ import {
 import { StatusBar } from "expo-status-bar";
 import { Button } from "@/components/button";
 import { WidgetProvider } from "@/contexts/WidgetContext";
+import { colors } from "@/styles/commonStyles";
+import {
+  Amiri_400Regular,
+  Amiri_700Bold,
+} from '@expo-google-fonts/amiri';
+import {
+  NotoSansArabic_400Regular,
+  NotoSansArabic_700Bold,
+} from '@expo-google-fonts/noto-sans-arabic';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -29,6 +39,10 @@ export default function RootLayout() {
   const networkState = useNetworkState();
   const [loaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
+    Amiri_400Regular,
+    Amiri_700Bold,
+    NotoSansArabic_400Regular,
+    NotoSansArabic_700Bold,
   });
 
   useEffect(() => {
@@ -44,7 +58,7 @@ export default function RootLayout() {
     ) {
       Alert.alert(
         "🔌 You are offline",
-        "You can keep using the app! Your changes will be saved locally and synced when you are back online."
+        "You can keep using the app! Prayer times will still be calculated based on your location."
       );
     }
   }, [networkState.isConnected, networkState.isInternetReachable]);
@@ -53,38 +67,26 @@ export default function RootLayout() {
     return null;
   }
 
-  const CustomDefaultTheme: Theme = {
+  // Custom theme using our prayer app colors
+  const PrayerAppTheme: Theme = {
     ...DefaultTheme,
     dark: false,
     colors: {
-      primary: "rgb(0, 122, 255)", // System Blue
-      background: "rgb(242, 242, 247)", // Light mode background
-      card: "rgb(255, 255, 255)", // White cards/surfaces
-      text: "rgb(0, 0, 0)", // Black text for light mode
-      border: "rgb(216, 216, 220)", // Light gray for separators/borders
-      notification: "rgb(255, 59, 48)", // System Red
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.card,
+      text: colors.text,
+      border: colors.border,
+      notification: colors.highlight,
     },
   };
 
-  const CustomDarkTheme: Theme = {
-    ...DarkTheme,
-    colors: {
-      primary: "rgb(10, 132, 255)", // System Blue (Dark Mode)
-      background: "rgb(1, 1, 1)", // True black background for OLED displays
-      card: "rgb(28, 28, 30)", // Dark card/surface color
-      text: "rgb(255, 255, 255)", // White text for dark mode
-      border: "rgb(44, 44, 46)", // Dark gray for separators/borders
-      notification: "rgb(255, 69, 58)", // System Red (Dark Mode)
-    },
-  };
   return (
     <>
-      <StatusBar style="auto" animated />
-        <ThemeProvider
-          value={colorScheme === "dark" ? CustomDarkTheme : CustomDefaultTheme}
-        >
-          <WidgetProvider>
-            <GestureHandlerRootView>
+      <StatusBar style="dark" animated />
+      <ThemeProvider value={PrayerAppTheme}>
+        <WidgetProvider>
+          <GestureHandlerRootView>
             <Stack>
               {/* Main app with tabs */}
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -115,10 +117,10 @@ export default function RootLayout() {
                 }}
               />
             </Stack>
-            <SystemBars style={"auto"} />
-            </GestureHandlerRootView>
-          </WidgetProvider>
-        </ThemeProvider>
+            <SystemBars style={"dark"} />
+          </GestureHandlerRootView>
+        </WidgetProvider>
+      </ThemeProvider>
     </>
   );
 }

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -37,38 +37,7 @@ export default function PrayerTimesScreen() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showQibla, setShowQibla] = useState(false);
 
-  useEffect(() => {
-    initializeApp();
-    setupNotifications();
-    
-    // Update current time every minute
-    const timeInterval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-
-    return () => clearInterval(timeInterval);
-  }, []);
-
-  useEffect(() => {
-    if (prayerTimes) {
-      const updatedPrayers = PrayerCalculator.getPrayerTimesList(prayerTimes);
-      setPrayers(updatedPrayers);
-    }
-  }, [prayerTimes, currentTime]);
-
-  const initializeApp = async () => {
-    try {
-      await requestLocationPermission();
-      await getCurrentLocation();
-    } catch (error) {
-      console.error('Error initializing app:', error);
-      Alert.alert('Error', 'Failed to initialize the app. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert(
@@ -81,9 +50,9 @@ export default function PrayerTimesScreen() {
       );
       throw new Error('Location permission denied');
     }
-  };
+  }, []);
 
-  const getCurrentLocation = async () => {
+  const getCurrentLocation = useCallback(async () => {
     try {
       const locationData = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
@@ -109,26 +78,9 @@ export default function PrayerTimesScreen() {
         [{ text: 'Retry', onPress: getCurrentLocation }]
       );
     }
-  };
+  }, []);
 
-  const setupNotifications = async () => {
-    try {
-      const { status } = await Notifications.requestPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Notification permissions not granted');
-        return;
-      }
-
-      // Schedule notifications for prayer times
-      if (prayerTimes) {
-        await scheduleNotifications();
-      }
-    } catch (error) {
-      console.error('Error setting up notifications:', error);
-    }
-  };
-
-  const scheduleNotifications = async () => {
+  const scheduleNotifications = useCallback(async () => {
     try {
       // Cancel existing notifications
       await Notifications.cancelAllScheduledNotificationsAsync();
@@ -156,7 +108,55 @@ export default function PrayerTimesScreen() {
     } catch (error) {
       console.error('Error scheduling notifications:', error);
     }
-  };
+  }, [prayerTimes]);
+
+  const setupNotifications = useCallback(async () => {
+    try {
+      const { status } = await Notifications.requestPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Notification permissions not granted');
+        return;
+      }
+
+      // Schedule notifications for prayer times
+      if (prayerTimes) {
+        await scheduleNotifications();
+      }
+    } catch (error) {
+      console.error('Error setting up notifications:', error);
+    }
+  }, [prayerTimes, scheduleNotifications]);
+
+  const initializeApp = useCallback(async () => {
+    try {
+      await requestLocationPermission();
+      await getCurrentLocation();
+    } catch (error) {
+      console.error('Error initializing app:', error);
+      Alert.alert('Error', 'Failed to initialize the app. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [requestLocationPermission, getCurrentLocation]);
+
+  useEffect(() => {
+    initializeApp();
+    setupNotifications();
+    
+    // Update current time every minute
+    const timeInterval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+
+    return () => clearInterval(timeInterval);
+  }, [initializeApp, setupNotifications]);
+
+  useEffect(() => {
+    if (prayerTimes) {
+      const updatedPrayers = PrayerCalculator.getPrayerTimesList(prayerTimes);
+      setPrayers(updatedPrayers);
+    }
+  }, [prayerTimes, currentTime]);
 
   const onRefresh = async () => {
     setRefreshing(true);

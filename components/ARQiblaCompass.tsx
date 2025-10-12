@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -17,7 +17,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  interpolate,
 } from 'react-native-reanimated';
 
 interface ARQiblaCompassProps {
@@ -36,32 +35,19 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
   const compassRotation = useSharedValue(0);
   const arrowRotation = useSharedValue(0);
 
-  useEffect(() => {
-    if (visible) {
-      initializeCompass();
-    }
-  }, [visible]);
+  const simulateCompass = useCallback(() => {
+    // Simulate compass readings - in a real app, this would come from magnetometer
+    let heading = 0;
+    const interval = setInterval(() => {
+      heading = (heading + 1) % 360;
+      setDeviceHeading(heading);
+    }, 100);
 
-  useEffect(() => {
-    if (location) {
-      const direction = getQiblaDirection(
-        location.coords.latitude,
-        location.coords.longitude
-      );
-      setQiblaDirection(direction);
-    }
-  }, [location]);
+    // Cleanup interval when component unmounts
+    return () => clearInterval(interval);
+  }, []);
 
-  useEffect(() => {
-    // Update compass rotation
-    compassRotation.value = withSpring(-deviceHeading);
-    
-    // Update arrow rotation to point to Qibla
-    const qiblaRelativeToNorth = qiblaDirection - deviceHeading;
-    arrowRotation.value = withSpring(qiblaRelativeToNorth);
-  }, [deviceHeading, qiblaDirection]);
-
-  const initializeCompass = async () => {
+  const initializeCompass = useCallback(async () => {
     try {
       // Request location permission
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -91,19 +77,32 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
     } finally {
       setLoading(false);
     }
-  };
+  }, [simulateCompass]);
 
-  const simulateCompass = () => {
-    // Simulate compass readings - in a real app, this would come from magnetometer
-    let heading = 0;
-    const interval = setInterval(() => {
-      heading = (heading + 1) % 360;
-      setDeviceHeading(heading);
-    }, 100);
+  useEffect(() => {
+    if (visible) {
+      initializeCompass();
+    }
+  }, [visible, initializeCompass]);
 
-    // Cleanup interval when component unmounts
-    return () => clearInterval(interval);
-  };
+  useEffect(() => {
+    if (location) {
+      const direction = getQiblaDirection(
+        location.coords.latitude,
+        location.coords.longitude
+      );
+      setQiblaDirection(direction);
+    }
+  }, [location]);
+
+  useEffect(() => {
+    // Update compass rotation
+    compassRotation.value = withSpring(-deviceHeading);
+    
+    // Update arrow rotation to point to Qibla
+    const qiblaRelativeToNorth = qiblaDirection - deviceHeading;
+    arrowRotation.value = withSpring(qiblaRelativeToNorth);
+  }, [deviceHeading, qiblaDirection, compassRotation, arrowRotation]);
 
   const compassAnimatedStyle = useAnimatedStyle(() => {
     return {

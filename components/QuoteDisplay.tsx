@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { colors } from '@/styles/commonStyles';
@@ -19,11 +19,7 @@ export default function QuoteDisplay({
   const [quote, setQuote] = useState<QuranQuote | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadQuote();
-  }, [isBeforeFirstPrayer, isAfterLastPrayer, shouldRefresh]);
-
-  const loadQuote = async () => {
+  const loadQuote = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -46,7 +42,11 @@ export default function QuoteDisplay({
     } finally {
       setLoading(false);
     }
-  };
+  }, [isBeforeFirstPrayer, isAfterLastPrayer]);
+
+  useEffect(() => {
+    loadQuote();
+  }, [loadQuote, shouldRefresh]);
 
   if (loading || !quote) {
     return (

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -109,9 +109,24 @@ export default function VerseOfTheDay({ visible, onClose }: VerseOfTheDayProps) 
     }
   }, [visible]);
 
+  const filterSurahs = useCallback(() => {
+    if (!searchQuery.trim()) {
+      setFilteredSurahs(sampleSurahs);
+      return;
+    }
+
+    const query = searchQuery.toLowerCase();
+    const filtered = sampleSurahs.filter(surah =>
+      surah.name.toLowerCase().includes(query) ||
+      surah.englishName.toLowerCase().includes(query) ||
+      surah.number.toString().includes(query)
+    );
+    setFilteredSurahs(filtered);
+  }, [searchQuery]);
+
   useEffect(() => {
     filterSurahs();
-  }, [searchQuery]);
+  }, [filterSurahs]);
 
   const loadTodayVerse = async () => {
     try {
@@ -134,21 +149,6 @@ export default function VerseOfTheDay({ visible, onClose }: VerseOfTheDayProps) 
       // Fallback to first verse
       setTodayVerse(sampleVerses[0]);
     }
-  };
-
-  const filterSurahs = () => {
-    if (!searchQuery.trim()) {
-      setFilteredSurahs(sampleSurahs);
-      return;
-    }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = sampleSurahs.filter(surah =>
-      surah.name.toLowerCase().includes(query) ||
-      surah.englishName.toLowerCase().includes(query) ||
-      surah.number.toString().includes(query)
-    );
-    setFilteredSurahs(filtered);
   };
 
   const openQuranReader = (surah?: Surah) => {

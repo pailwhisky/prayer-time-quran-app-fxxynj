@@ -43,7 +43,7 @@ export default function PrayerTimeItem({ prayer }: PrayerTimeItemProps) {
       scale.value = withTiming(1, { duration: 300 });
       opacity.value = withTiming(1, { duration: 300 });
     }
-  }, [prayer.isNext]);
+  }, [prayer.isNext, scale, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {

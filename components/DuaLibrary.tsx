@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -50,9 +50,28 @@ export default function DuaLibrary({ visible, onClose }: DuaLibraryProps) {
     }
   }, [visible]);
 
+  const filterDuas = useCallback(() => {
+    let filtered = duas;
+
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(dua => dua.category === selectedCategory);
+    }
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(dua =>
+        dua.title.toLowerCase().includes(query) ||
+        dua.translation.toLowerCase().includes(query) ||
+        dua.category.toLowerCase().includes(query)
+      );
+    }
+
+    setFilteredDuas(filtered);
+  }, [duas, searchQuery, selectedCategory]);
+
   useEffect(() => {
     filterDuas();
-  }, [duas, searchQuery, selectedCategory]);
+  }, [filterDuas]);
 
   const loadDuas = async () => {
     try {
@@ -90,25 +109,6 @@ export default function DuaLibrary({ visible, onClose }: DuaLibraryProps) {
     } catch (error) {
       console.error('Error saving tasbeeh count:', error);
     }
-  };
-
-  const filterDuas = () => {
-    let filtered = duas;
-
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(dua => dua.category === selectedCategory);
-    }
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(dua =>
-        dua.title.toLowerCase().includes(query) ||
-        dua.translation.toLowerCase().includes(query) ||
-        dua.category.toLowerCase().includes(query)
-      );
-    }
-
-    setFilteredDuas(filtered);
   };
 
   const incrementTasbeeh = () => {

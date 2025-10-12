@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, Alert } from 'react-native';
 import { Magnetometer } from 'expo-sensors';
 import Animated, {
@@ -33,41 +33,41 @@ export default function QiblaCompass({ latitude, longitude }: QiblaCompassProps)
     setQiblaDirection(direction);
     qiblaRotation.value = withSpring(direction);
     console.log('Qibla direction calculated:', direction);
-  }, [latitude, longitude]);
+  }, [latitude, longitude, qiblaRotation]);
+
+  const subscribeMagnetometer = useCallback(async () => {
+    try {
+      const { status } = await Magnetometer.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Required', 'Magnetometer permission is needed for compass functionality');
+        return;
+      }
+
+      const isAvailable = await Magnetometer.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert('Compass Not Available', 'Your device does not support compass functionality');
+        return;
+      }
+
+      Magnetometer.setUpdateInterval(100);
+      const sub = Magnetometer.addListener((data) => {
+        setMagnetometerData(data);
+        
+        // Calculate compass heading
+        const angle = Math.atan2(data.y, data.x) * (180 / Math.PI);
+        const heading = (angle + 360) % 360;
+        rotation.value = withSpring(-heading);
+      });
+      
+      setSubscription(sub);
+      console.log('Magnetometer subscription started');
+    } catch (error) {
+      console.error('Error setting up magnetometer:', error);
+      Alert.alert('Error', 'Failed to initialize compass');
+    }
+  }, [rotation]);
 
   useEffect(() => {
-    const subscribeMagnetometer = async () => {
-      try {
-        const { status } = await Magnetometer.requestPermissionsAsync();
-        if (status !== 'granted') {
-          Alert.alert('Permission Required', 'Magnetometer permission is needed for compass functionality');
-          return;
-        }
-
-        const isAvailable = await Magnetometer.isAvailableAsync();
-        if (!isAvailable) {
-          Alert.alert('Compass Not Available', 'Your device does not support compass functionality');
-          return;
-        }
-
-        Magnetometer.setUpdateInterval(100);
-        const sub = Magnetometer.addListener((data) => {
-          setMagnetometerData(data);
-          
-          // Calculate compass heading
-          const angle = Math.atan2(data.y, data.x) * (180 / Math.PI);
-          const heading = (angle + 360) % 360;
-          rotation.value = withSpring(-heading);
-        });
-        
-        setSubscription(sub);
-        console.log('Magnetometer subscription started');
-      } catch (error) {
-        console.error('Error setting up magnetometer:', error);
-        Alert.alert('Error', 'Failed to initialize compass');
-      }
-    };
-
     subscribeMagnetometer();
 
     return () => {
@@ -76,7 +76,7 @@ export default function QiblaCompass({ latitude, longitude }: QiblaCompassProps)
         console.log('Magnetometer subscription removed');
       }
     };
-  }, []);
+  }, [subscribeMagnetometer, subscription]);
 
   const compassStyle = useAnimatedStyle(() => {
     return {

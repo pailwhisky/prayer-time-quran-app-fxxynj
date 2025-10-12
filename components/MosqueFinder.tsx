@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -51,19 +51,7 @@ export default function MosqueFinder({ visible, onClose }: MosqueFinderProps) {
   const [loading, setLoading] = useState(true);
   const [locationPermission, setLocationPermission] = useState(false);
 
-  useEffect(() => {
-    if (visible) {
-      requestLocationPermission();
-    }
-  }, [visible]);
-
-  useEffect(() => {
-    if (userLocation) {
-      loadNearbyMosques();
-    }
-  }, [userLocation]);
-
-  const requestLocationPermission = async () => {
+  const requestLocationPermission = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -89,9 +77,15 @@ export default function MosqueFinder({ visible, onClose }: MosqueFinderProps) {
       Alert.alert('Error', 'Failed to get your location');
       setLoading(false);
     }
-  };
+  }, []);
 
-  const loadNearbyMosques = async () => {
+  useEffect(() => {
+    if (visible) {
+      requestLocationPermission();
+    }
+  }, [visible, requestLocationPermission]);
+
+  const loadNearbyMosques = useCallback(async () => {
     try {
       if (!userLocation) return;
 
@@ -124,7 +118,13 @@ export default function MosqueFinder({ visible, onClose }: MosqueFinderProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userLocation]);
+
+  useEffect(() => {
+    if (userLocation) {
+      loadNearbyMosques();
+    }
+  }, [userLocation, loadNearbyMosques]);
 
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Radius of the Earth in kilometers
@@ -374,7 +374,7 @@ export default function MosqueFinder({ visible, onClose }: MosqueFinderProps) {
               <IconSymbol name="location-searching" size={48} color={colors.textSecondary} />
               <Text style={styles.emptyTitle}>No Mosques Found</Text>
               <Text style={styles.emptyText}>
-                We couldn't find any mosques in our database near your location.
+                We couldn&apos;t find any mosques in our database near your location.
               </Text>
             </View>
           )}

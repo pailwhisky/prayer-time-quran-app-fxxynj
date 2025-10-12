@@ -19,10 +19,16 @@ export default function TabLayout() {
         tabBarStyle: Platform.select({
           ios: {
             position: 'absolute',
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
           },
-          default: {},
+          default: {
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+          },
         }),
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="(home)"
         options={{
@@ -38,24 +44,17 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="learning"
-        options={{
-          title: 'Learn',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="school" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          title: 'Community',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="people" color={color} />,
-        }}
-      />
-      <Tabs.Screen
         name="premium"
         options={{
-          title: 'More',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="apps" color={color} />,
+          title: 'Premium',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
         }}
       />
     </Tabs>

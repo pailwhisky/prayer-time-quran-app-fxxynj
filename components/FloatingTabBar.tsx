@@ -38,7 +38,7 @@ interface FloatingTabBarProps {
 
 export default function FloatingTabBar({
   tabs,
-  containerWidth = 240,
+  containerWidth = 280,
   borderRadius = 25,
   bottomMargin
 }: FloatingTabBarProps) {
@@ -117,11 +117,11 @@ export default function FloatingTabBar({
       ...styles.blurContainer,
       ...Platform.select({
         ios: {
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
         },
         android: {
           backgroundColor: colors.card,
-          elevation: 8,
+          elevation: 10,
         },
         web: {
           backgroundColor: colors.card,
@@ -170,14 +170,20 @@ export default function FloatingTabBar({
                   <View style={styles.tabContent}>
                     <IconSymbol
                       name={tab.icon}
-                      size={24}
+                      size={26}
                       color={isActive ? colors.primary : colors.textSecondary}
                     />
                     <Text
                       style={[
                         styles.tabLabel,
                         { color: colors.textSecondary },
-                        isActive && { color: colors.primary, fontWeight: '600' },
+                        isActive && { 
+                          color: colors.primary, 
+                          fontWeight: '700',
+                          textShadowColor: 'rgba(0, 70, 67, 0.15)',
+                          textShadowOffset: { width: 0, height: 1 },
+                          textShadowRadius: 2,
+                        },
                       ]}
                     >
                       {tab.label}
@@ -208,7 +214,7 @@ const styles = StyleSheet.create({
   },
   blurContainer: {
     overflow: 'hidden',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.border,
   },
   background: {
@@ -224,7 +230,7 @@ const styles = StyleSheet.create({
   },
   tabsContainer: {
     flexDirection: 'row',
-    height: 60,
+    height: 68,
     alignItems: 'center',
     paddingHorizontal: 8,
   },
@@ -232,16 +238,17 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 4,
   },
   tabLabel: {
-    fontSize: 11,
-    fontWeight: '500',
-    marginTop: 2,
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 3,
+    letterSpacing: 0.2,
   },
 });

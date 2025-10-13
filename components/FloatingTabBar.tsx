@@ -2,6 +2,7 @@
 import React from 'react';
 import {
   View,
+  Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
@@ -117,11 +118,12 @@ export default function FloatingTabBar({
                   activeOpacity={0.7}
                 >
                   <View style={styles.tabContent}>
-                    <IconSymbol
-                      name={tab.icon}
-                      size={28}
-                      color={isActive ? colors.card : colors.quranGreen}
-                    />
+                    <Text style={[
+                      styles.tabLabel,
+                      isActive && styles.tabLabelActive
+                    ]}>
+                      {tab.label}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               );
@@ -192,5 +194,14 @@ const styles = StyleSheet.create({
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  tabLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.quranGreen,
+    textTransform: 'capitalize',
+  },
+  tabLabelActive: {
+    color: colors.card,
   },
 });

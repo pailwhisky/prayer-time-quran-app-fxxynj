@@ -61,6 +61,37 @@ export default function PrayerTimesScreen() {
     }
   }, []);
 
+  // Schedule notifications for prayer times
+  const schedulePrayerNotifications = useCallback(async (times: PrayerTimesData) => {
+    try {
+      // Cancel all existing notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      console.log('🔔 Scheduling prayer notifications...');
+
+      const prayers = PrayerCalculator.getPrayerTimesList(times);
+      
+      for (const prayer of prayers) {
+        const now = new Date();
+        if (prayer.time > now) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `${prayer.name} Prayer Time`,
+              body: `It's time for ${prayer.name} prayer (${prayer.arabicName})`,
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+            },
+            trigger: {
+              date: prayer.time,
+            },
+          });
+          console.log(`✅ Notification scheduled for ${prayer.name} at ${prayer.time.toLocaleTimeString()}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error scheduling notifications:', error);
+    }
+  }, []);
+
   // Request location and load prayer times
   const requestLocationAndLoadPrayerTimes = useCallback(async () => {
     try {
@@ -114,44 +145,13 @@ export default function PrayerTimesScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [notificationPermission]);
-
-  // Schedule notifications for prayer times
-  const schedulePrayerNotifications = async (times: PrayerTimesData) => {
-    try {
-      // Cancel all existing notifications
-      await Notifications.cancelAllScheduledNotificationsAsync();
-      console.log('🔔 Scheduling prayer notifications...');
-
-      const prayers = PrayerCalculator.getPrayerTimesList(times);
-      
-      for (const prayer of prayers) {
-        const now = new Date();
-        if (prayer.time > now) {
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              title: `${prayer.name} Prayer Time`,
-              body: `It's time for ${prayer.name} prayer (${prayer.arabicName})`,
-              sound: true,
-              priority: Notifications.AndroidNotificationPriority.HIGH,
-            },
-            trigger: {
-              date: prayer.time,
-            },
-          });
-          console.log(`✅ Notification scheduled for ${prayer.name} at ${prayer.time.toLocaleTimeString()}`);
-        }
-      }
-    } catch (error) {
-      console.error('Error scheduling notifications:', error);
-    }
-  };
+  }, [notificationPermission, schedulePrayerNotifications]);
 
   // Initialize on mount
   useEffect(() => {
     requestNotificationPermissions();
     requestLocationAndLoadPrayerTimes();
-  }, []);
+  }, [requestNotificationPermissions, requestLocationAndLoadPrayerTimes]);
 
   // Update current time every minute
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function PrayerTimesScreen() {
       );
       setPrayerTimes(updatedTimes);
     }
-  }, [currentTime]);
+  }, [currentTime, location, prayerTimes]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

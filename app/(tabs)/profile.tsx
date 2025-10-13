@@ -21,7 +21,6 @@ import { IconSymbol } from '@/components/IconSymbol';
 import IslamicChatbot from '@/components/IslamicChatbot';
 import SadaqahDonation from '@/components/SadaqahDonation';
 import NavigationHeader from '@/components/NavigationHeader';
-import GeminiSetup from '@/components/GeminiSetup';
 import AdvancedNotifications from '@/components/AdvancedNotifications';
 
 export default function ProfileScreen() {

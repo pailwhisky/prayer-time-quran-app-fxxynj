@@ -4,7 +4,7 @@ import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 export const colors = {
   background: '#F5F5DC',      // Soft Beige
   text: '#004643',            // Deep Teal
-  textSecondary: '#777777',   // Gray
+  textSecondary: '#006B5F',   // Quran Green (more visible)
   primary: '#004643',         // Deep Teal
   secondary: '#D4A373',       // Light Brown
   accent: '#D4A373',          // Light Brown
@@ -12,6 +12,7 @@ export const colors = {
   highlight: '#E07A5F',       // Burnt Orange
   shadow: 'rgba(0, 70, 67, 0.1)',
   border: 'rgba(0, 70, 67, 0.2)',
+  quranGreen: '#006B5F',      // Quran Green for better visibility
 };
 
 export const buttonStyles = StyleSheet.create({

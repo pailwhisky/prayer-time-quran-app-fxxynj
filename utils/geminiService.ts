@@ -1,15 +1,24 @@
 
-const GOOGLE_AI_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_AI_API_KEY || '';
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export interface GeminiResponse {
-  candidates: Array<{
-    content: {
-      parts: Array<{
-        text: string;
-      }>;
-    };
-  }>;
+const GOOGLE_AI_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_AI_API_KEY || '';
+
+let genAI: GoogleGenerativeAI | null = null;
+let model: any = null;
+
+// Initialize the Gemini AI client
+function initializeGemini() {
+  if (!GOOGLE_AI_API_KEY) {
+    console.warn('Google AI API key not configured. Please set EXPO_PUBLIC_GOOGLE_AI_API_KEY in your environment.');
+    return false;
+  }
+
+  if (!genAI) {
+    genAI = new GoogleGenerativeAI(GOOGLE_AI_API_KEY);
+    model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  }
+
+  return true;
 }
 
 export interface QuranVerseEnhanced {
@@ -31,8 +40,7 @@ export interface IslamicQuestion {
  */
 export async function generateEnhancedQuranQuote(topic?: string): Promise<QuranVerseEnhanced | null> {
   try {
-    if (!GOOGLE_AI_API_KEY) {
-      console.warn('Google AI API key not configured');
+    if (!initializeGemini()) {
       return null;
     }
 
@@ -40,31 +48,9 @@ export async function generateEnhancedQuranQuote(topic?: string): Promise<QuranV
       ? `Provide a relevant Quran verse about ${topic} with its Arabic text, English translation, reference (Surah:Ayah), brief context, and a short spiritual reflection. Format as JSON with keys: arabic, translation, reference, context, reflection.`
       : `Provide an inspiring Quran verse with its Arabic text, English translation, reference (Surah:Ayah), brief context, and a short spiritual reflection. Format as JSON with keys: arabic, translation, reference, context, reflection.`;
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GOOGLE_AI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 500,
-        }
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Gemini API error:', response.status);
-      return null;
-    }
-
-    const data: GeminiResponse = await response.json();
-    const text = data.candidates[0]?.content?.parts[0]?.text;
+    const result = await model!.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
     
     if (!text) {
       return null;
@@ -93,8 +79,7 @@ export async function generateEnhancedQuranQuote(topic?: string): Promise<QuranV
  */
 export async function askIslamicQuestion(question: string): Promise<IslamicQuestion | null> {
   try {
-    if (!GOOGLE_AI_API_KEY) {
-      console.warn('Google AI API key not configured');
+    if (!initializeGemini()) {
       return null;
     }
 
@@ -102,31 +87,9 @@ export async function askIslamicQuestion(question: string): Promise<IslamicQuest
     Provide a clear, respectful answer based on Quran and authentic Hadith. 
     Include relevant references. Format as JSON with keys: question, answer, references (array of strings).`;
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GOOGLE_AI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.5,
-          maxOutputTokens: 800,
-        }
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Gemini API error:', response.status);
-      return null;
-    }
-
-    const data: GeminiResponse = await response.json();
-    const text = data.candidates[0]?.content?.parts[0]?.text;
+    const result = await model!.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
     
     if (!text) {
       return null;
@@ -160,38 +123,15 @@ export async function askIslamicQuestion(question: string): Promise<IslamicQuest
  */
 export async function generateDailyHadith(): Promise<{ hadith: string; explanation: string; reference: string } | null> {
   try {
-    if (!GOOGLE_AI_API_KEY) {
-      console.warn('Google AI API key not configured');
+    if (!initializeGemini()) {
       return null;
     }
 
     const prompt = `Provide an authentic Hadith with its English translation, a brief explanation of its meaning and relevance to daily life, and the reference (collection and number). Format as JSON with keys: hadith, explanation, reference.`;
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GOOGLE_AI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 600,
-        }
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Gemini API error:', response.status);
-      return null;
-    }
-
-    const data: GeminiResponse = await response.json();
-    const text = data.candidates[0]?.content?.parts[0]?.text;
+    const result = await model!.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
     
     if (!text) {
       return null;
@@ -221,7 +161,7 @@ export async function generateDailyHadith(): Promise<{ hadith: string; explanati
 export async function analyzeRecitation(audioData: string): Promise<{ feedback: string; score: number } | null> {
   // This would require audio processing capabilities
   // For now, return a placeholder
-  console.log('Recitation analysis not yet implemented');
+  console.log('Recitation analysis not yet implemented - requires audio processing');
   return null;
 }
 
@@ -230,42 +170,115 @@ export async function analyzeRecitation(audioData: string): Promise<{ feedback: 
  */
 export async function generateSpiritualAdvice(context: string): Promise<string | null> {
   try {
-    if (!GOOGLE_AI_API_KEY) {
-      console.warn('Google AI API key not configured');
+    if (!initializeGemini()) {
       return null;
     }
 
     const prompt = `As a compassionate Islamic spiritual advisor, provide brief, uplifting advice for someone who ${context}. Keep it concise (2-3 sentences) and include a relevant Quran verse or Hadith reference.`;
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GOOGLE_AI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.8,
-          maxOutputTokens: 300,
-        }
-      })
-    });
-
-    if (!response.ok) {
-      console.error('Gemini API error:', response.status);
-      return null;
-    }
-
-    const data: GeminiResponse = await response.json();
-    const text = data.candidates[0]?.content?.parts[0]?.text;
+    const result = await model!.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
     
     return text || null;
   } catch (error) {
     console.error('Error generating spiritual advice:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate prayer reflection based on time of day
+ */
+export async function generatePrayerReflection(prayerName: string): Promise<string | null> {
+  try {
+    if (!initializeGemini()) {
+      return null;
+    }
+
+    const prompt = `Provide a brief, inspiring reflection for ${prayerName} prayer time. Include its spiritual significance and a relevant Quran verse or Hadith. Keep it concise (2-3 sentences).`;
+
+    const result = await model!.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    return text || null;
+  } catch (error) {
+    console.error('Error generating prayer reflection:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate personalized Dua based on user's need
+ */
+export async function generatePersonalizedDua(need: string): Promise<{ arabic: string; transliteration: string; translation: string; reference?: string } | null> {
+  try {
+    if (!initializeGemini()) {
+      return null;
+    }
+
+    const prompt = `Provide an authentic Islamic Dua (supplication) for someone who needs ${need}. Include the Arabic text, transliteration, English translation, and reference if available. Format as JSON with keys: arabic, transliteration, translation, reference.`;
+
+    const result = await model!.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    if (!text) {
+      return null;
+    }
+
+    // Try to parse JSON response
+    try {
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return parsed;
+      }
+    } catch (e) {
+      console.log('Could not parse JSON');
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error generating personalized dua:', error);
+    return null;
+  }
+}
+
+/**
+ * Generate Islamic quiz questions for learning
+ */
+export async function generateIslamicQuiz(topic: string, difficulty: 'easy' | 'medium' | 'hard'): Promise<Array<{ question: string; options: string[]; correctAnswer: number; explanation: string }> | null> {
+  try {
+    if (!initializeGemini()) {
+      return null;
+    }
+
+    const prompt = `Generate 5 ${difficulty} level multiple choice quiz questions about ${topic} in Islam. Each question should have 4 options with one correct answer. Include a brief explanation for each answer. Format as JSON array with objects containing: question, options (array of 4 strings), correctAnswer (index 0-3), explanation.`;
+
+    const result = await model!.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    if (!text) {
+      return null;
+    }
+
+    // Try to parse JSON response
+    try {
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return parsed;
+      }
+    } catch (e) {
+      console.log('Could not parse JSON');
+    }
+
+    return null;
+  } catch (error) {
+    console.error('Error generating Islamic quiz:', error);
     return null;
   }
 }

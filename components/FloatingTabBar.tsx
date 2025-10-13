@@ -171,12 +171,12 @@ export default function FloatingTabBar({
                     <IconSymbol
                       name={tab.icon}
                       size={26}
-                      color={isActive ? colors.primary : colors.textSecondary}
+                      color={isActive ? colors.primary : colors.quranGreen}
                     />
                     <Text
                       style={[
                         styles.tabLabel,
-                        { color: colors.textSecondary },
+                        { color: colors.quranGreen },
                         isActive && { 
                           color: colors.primary, 
                           fontWeight: '700',

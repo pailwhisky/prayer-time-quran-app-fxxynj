@@ -8,147 +8,88 @@ import Animated, {
   withSpring,
   interpolate,
 } from 'react-native-reanimated';
-import { colors } from '@/styles/commonStyles';
 import { getQiblaDirection } from '@/utils/prayerTimes';
+import { colors } from '@/styles/commonStyles';
 
 interface QiblaCompassProps {
   latitude: number;
   longitude: number;
+  visible?: boolean;
+  onClose?: () => void;
 }
 
-const { width } = Dimensions.get('window');
-const COMPASS_SIZE = Math.min(width * 0.7, 280);
+const COMPASS_SIZE = Dimensions.get('window').width * 0.7;
 
-export default function QiblaCompass({ latitude, longitude }: QiblaCompassProps) {
-  const [magnetometerData, setMagnetometerData] = useState({ x: 0, y: 0, z: 0 });
-  const [subscription, setSubscription] = useState<any>(null);
+export default function QiblaCompass({ latitude, longitude, visible = true, onClose }: QiblaCompassProps) {
+  const [deviceHeading, setDeviceHeading] = useState(0);
   const [qiblaDirection, setQiblaDirection] = useState(0);
-  
-  const rotation = useSharedValue(0);
+  const [subscription, setSubscription] = useState<any>(null);
   const qiblaRotation = useSharedValue(0);
 
+  const subscribeMagnetometer = useCallback(() => {
+    const sub = Magnetometer.addListener((data) => {
+      const { x, y } = data;
+      let angle = Math.atan2(y, x) * (180 / Math.PI);
+      angle = (angle + 360) % 360;
+      setDeviceHeading(angle);
+    });
+    setSubscription(sub);
+  }, []);
+
   useEffect(() => {
-    // Calculate Qibla direction
-    const direction = getQiblaDirection(latitude, longitude);
-    setQiblaDirection(direction);
-    qiblaRotation.value = withSpring(direction);
-    console.log('Qibla direction calculated:', direction);
-  }, [latitude, longitude, qiblaRotation]);
-
-  const subscribeMagnetometer = useCallback(async () => {
-    try {
-      const { status } = await Magnetometer.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Required', 'Magnetometer permission is needed for compass functionality');
-        return;
-      }
-
-      const isAvailable = await Magnetometer.isAvailableAsync();
-      if (!isAvailable) {
-        Alert.alert('Compass Not Available', 'Your device does not support compass functionality');
-        return;
-      }
-
+    if (visible) {
       Magnetometer.setUpdateInterval(100);
-      const sub = Magnetometer.addListener((data) => {
-        setMagnetometerData(data);
-        
-        // Calculate compass heading
-        const angle = Math.atan2(data.y, data.x) * (180 / Math.PI);
-        const heading = (angle + 360) % 360;
-        rotation.value = withSpring(-heading);
-      });
-      
-      setSubscription(sub);
-      console.log('Magnetometer subscription started');
-    } catch (error) {
-      console.error('Error setting up magnetometer:', error);
-      Alert.alert('Error', 'Failed to initialize compass');
+      subscribeMagnetometer();
     }
-  }, [rotation]);
-
-  useEffect(() => {
-    subscribeMagnetometer();
 
     return () => {
       if (subscription) {
         subscription.remove();
-        console.log('Magnetometer subscription removed');
       }
     };
-  }, [subscribeMagnetometer, subscription]);
+  }, [visible, subscribeMagnetometer, subscription]);
 
-  const compassStyle = useAnimatedStyle(() => {
+  useEffect(() => {
+    const direction = getQiblaDirection(latitude, longitude);
+    setQiblaDirection(direction);
+    console.log('Qibla direction calculated:', direction);
+  }, [latitude, longitude]);
+
+  useEffect(() => {
+    const targetRotation = qiblaDirection - deviceHeading;
+    qiblaRotation.value = withSpring(targetRotation, {
+      damping: 15,
+      stiffness: 100,
+    });
+  }, [deviceHeading, qiblaDirection, qiblaRotation]);
+
+  const arrowStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ rotate: `${rotation.value}deg` }],
+      transform: [{ rotate: `${qiblaRotation.value}deg` }],
     };
   });
 
-  const qiblaArrowStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ rotate: `${qiblaRotation.value + rotation.value}deg` }],
-    };
-  });
+  if (!visible) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Qibla Direction</Text>
-      <Text style={styles.subtitle}>Point your device towards the Kaaba</Text>
-      
       <View style={styles.compassContainer}>
-        <Animated.View style={[styles.compass, compassStyle]}>
-          {/* Compass markings */}
-          <View style={styles.compassRing}>
-            {/* North marker */}
-            <View style={[styles.directionMarker, styles.northMarker]}>
-              <Text style={styles.directionText}>N</Text>
-            </View>
-            
-            {/* Other direction markers */}
-            <View style={[styles.directionMarker, styles.eastMarker]}>
-              <Text style={styles.directionText}>E</Text>
-            </View>
-            <View style={[styles.directionMarker, styles.southMarker]}>
-              <Text style={styles.directionText}>S</Text>
-            </View>
-            <View style={[styles.directionMarker, styles.westMarker]}>
-              <Text style={styles.directionText}>W</Text>
-            </View>
-            
-            {/* Degree markings */}
-            {Array.from({ length: 36 }, (_, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.degreeMarker,
-                  {
-                    transform: [{ rotate: `${i * 10}deg` }],
-                  },
-                ]}
-              />
-            ))}
-          </View>
-        </Animated.View>
-        
-        {/* Qibla arrow */}
-        <Animated.View style={[styles.qiblaArrow, qiblaArrowStyle]}>
-          <View style={styles.arrowHead} />
-          <View style={styles.arrowBody} />
-          <Text style={styles.qiblaText}>QIBLA</Text>
-        </Animated.View>
-        
-        {/* Center dot */}
-        <View style={styles.centerDot} />
+        <View style={styles.compass}>
+          <Text style={styles.directionLabel}>N</Text>
+          <Animated.View style={[styles.arrow, arrowStyle]}>
+            <View style={styles.arrowHead} />
+            <View style={styles.arrowBody} />
+          </Animated.View>
+        </View>
       </View>
-      
-      <View style={styles.infoContainer}>
-        <Text style={styles.infoText}>
-          Qibla Direction: {qiblaDirection.toFixed(1)}°
-        </Text>
-        <Text style={styles.infoSubtext}>
-          Hold your device flat and rotate until the arrow points up
-        </Text>
-      </View>
+      <Text style={styles.infoText}>
+        Point your device towards the arrow to face Qibla
+      </Text>
+      <Text style={styles.degreeText}>
+        Qibla: {Math.round(qiblaDirection)}° | Device: {Math.round(deviceHeading)}°
+      </Text>
     </View>
   );
 }
@@ -156,27 +97,14 @@ export default function QiblaCompass({ latitude, longitude }: QiblaCompassProps)
 const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 20,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: 30,
-    textAlign: 'center',
   },
   compassContainer: {
     width: COMPASS_SIZE,
     height: COMPASS_SIZE,
-    justifyContent: 'center',
     alignItems: 'center',
-    position: 'relative',
+    justifyContent: 'center',
   },
   compass: {
     width: COMPASS_SIZE,
@@ -185,110 +113,49 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderWidth: 3,
     borderColor: colors.primary,
-    justifyContent: 'center',
     alignItems: 'center',
-    boxShadow: `0px 4px 12px ${colors.shadow}`,
+    justifyContent: 'center',
+    boxShadow: `0 4px 12px ${colors.shadow}`,
     elevation: 5,
   },
-  compassRing: {
-    width: '100%',
-    height: '100%',
-    position: 'relative',
-  },
-  directionMarker: {
+  directionLabel: {
     position: 'absolute',
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  northMarker: {
-    top: 10,
-    left: '50%',
-    marginLeft: -15,
-    backgroundColor: colors.highlight,
-    borderRadius: 15,
-  },
-  eastMarker: {
-    right: 10,
-    top: '50%',
-    marginTop: -15,
-  },
-  southMarker: {
-    bottom: 10,
-    left: '50%',
-    marginLeft: -15,
-  },
-  westMarker: {
-    left: 10,
-    top: '50%',
-    marginTop: -15,
-  },
-  directionText: {
-    fontSize: 14,
+    top: 20,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.primary,
   },
-  degreeMarker: {
-    position: 'absolute',
-    width: 2,
-    height: 15,
-    backgroundColor: colors.border,
-    top: 5,
-    left: '50%',
-    marginLeft: -1,
-    transformOrigin: `1px ${COMPASS_SIZE / 2 - 5}px`,
-  },
-  qiblaArrow: {
-    position: 'absolute',
+  arrow: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   arrowHead: {
     width: 0,
     height: 0,
-    borderLeftWidth: 15,
-    borderRightWidth: 15,
-    borderBottomWidth: 30,
+    borderLeftWidth: 20,
+    borderRightWidth: 20,
+    borderBottomWidth: 40,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: colors.highlight,
-    marginBottom: -5,
   },
   arrowBody: {
-    width: 6,
-    height: 60,
-    backgroundColor: colors.highlight,
-    borderRadius: 3,
-  },
-  qiblaText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: colors.highlight,
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  centerDot: {
-    position: 'absolute',
     width: 8,
-    height: 8,
+    height: 80,
+    backgroundColor: colors.highlight,
     borderRadius: 4,
-    backgroundColor: colors.primary,
-  },
-  infoContainer: {
-    marginTop: 30,
-    alignItems: 'center',
   },
   infoText: {
+    marginTop: 24,
     fontSize: 16,
-    fontWeight: '600',
     color: colors.text,
-    marginBottom: 8,
+    textAlign: 'center',
+    fontWeight: '600',
   },
-  infoSubtext: {
+  degreeText: {
+    marginTop: 12,
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
   },
 });

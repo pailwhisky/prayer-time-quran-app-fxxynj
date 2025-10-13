@@ -9,16 +9,24 @@ export interface PrayerTime {
 }
 
 export interface PrayerTimesData {
-  fajr: Date;
-  dhuhr: Date;
-  asr: Date;
-  maghrib: Date;
-  isha: Date;
+  fajr: PrayerTime;
+  dhuhr: PrayerTime;
+  asr: PrayerTime;
+  maghrib: PrayerTime;
+  isha: PrayerTime;
   location: string;
 }
 
 // Prayer calculation using simplified astronomical calculations
 export class PrayerCalculator {
+  private latitude: number;
+  private longitude: number;
+
+  constructor(latitude: number, longitude: number) {
+    this.latitude = latitude;
+    this.longitude = longitude;
+  }
+
   private static toRadians(degrees: number): number {
     return degrees * (Math.PI / 180);
   }
@@ -39,10 +47,10 @@ export class PrayerCalculator {
   private static getSunDeclination(julianDay: number): number {
     const n = julianDay - 2451545.0;
     const L = (280.460 + 0.9856474 * n) % 360;
-    const g = this.toRadians((357.528 + 0.9856003 * n) % 360);
-    const lambda = this.toRadians(L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g));
+    const g = PrayerCalculator.toRadians((357.528 + 0.9856003 * n) % 360);
+    const lambda = PrayerCalculator.toRadians(L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g));
     
-    return Math.asin(Math.sin(lambda) * Math.sin(this.toRadians(23.439)));
+    return Math.asin(Math.sin(lambda) * Math.sin(PrayerCalculator.toRadians(23.439)));
   }
 
   private static getTimeForAngle(
@@ -52,32 +60,32 @@ export class PrayerCalculator {
     angle: number,
     isRise: boolean = true
   ): number {
-    const declination = this.getSunDeclination(julianDay);
-    const latRad = this.toRadians(latitude);
+    const declination = PrayerCalculator.getSunDeclination(julianDay);
+    const latRad = PrayerCalculator.toRadians(latitude);
     
     const hourAngle = Math.acos(
-      (Math.sin(this.toRadians(angle)) - Math.sin(latRad) * Math.sin(declination)) /
+      (Math.sin(PrayerCalculator.toRadians(angle)) - Math.sin(latRad) * Math.sin(declination)) /
       (Math.cos(latRad) * Math.cos(declination))
     );
     
-    const timeCorrection = 4 * (longitude - this.toDegrees(hourAngle * (isRise ? -1 : 1)));
-    const equationOfTime = 4 * (this.toDegrees(
-      0.0172 * Math.sin(2 * this.toRadians((julianDay - 81) * 360 / 365))
+    const timeCorrection = 4 * (longitude - PrayerCalculator.toDegrees(hourAngle * (isRise ? -1 : 1)));
+    const equationOfTime = 4 * (PrayerCalculator.toDegrees(
+      0.0172 * Math.sin(2 * PrayerCalculator.toRadians((julianDay - 81) * 360 / 365))
     ));
     
     return 12 + timeCorrection / 60 + equationOfTime / 60;
   }
 
-  static calculatePrayerTimes(latitude: number, longitude: number, date: Date = new Date()): PrayerTimesData {
-    const julianDay = this.getJulianDay(date);
+  getTodayPrayerTimes(date: Date = new Date()): PrayerTimesData {
+    const julianDay = PrayerCalculator.getJulianDay(date);
     
     // Calculate prayer times using standard angles
-    const fajrTime = this.getTimeForAngle(julianDay, latitude, longitude, -18, true);
-    const sunriseTime = this.getTimeForAngle(julianDay, latitude, longitude, -0.833, true);
-    const dhuhrTime = 12 - (4 * longitude) / 60; // Solar noon
-    const asrTime = this.getTimeForAngle(julianDay, latitude, longitude, -4, false); // Simplified Asr
-    const maghribTime = this.getTimeForAngle(julianDay, latitude, longitude, -0.833, false);
-    const ishaTime = this.getTimeForAngle(julianDay, latitude, longitude, -18, false);
+    const fajrTime = PrayerCalculator.getTimeForAngle(julianDay, this.latitude, this.longitude, -18, true);
+    const sunriseTime = PrayerCalculator.getTimeForAngle(julianDay, this.latitude, this.longitude, -0.833, true);
+    const dhuhrTime = 12 - (4 * this.longitude) / 60; // Solar noon
+    const asrTime = PrayerCalculator.getTimeForAngle(julianDay, this.latitude, this.longitude, -4, false); // Simplified Asr
+    const maghribTime = PrayerCalculator.getTimeForAngle(julianDay, this.latitude, this.longitude, -0.833, false);
+    const ishaTime = PrayerCalculator.getTimeForAngle(julianDay, this.latitude, this.longitude, -18, false);
 
     const createTimeFromHours = (hours: number): Date => {
       const result = new Date(date);
@@ -85,42 +93,78 @@ export class PrayerCalculator {
       return result;
     };
 
-    return {
-      fajr: createTimeFromHours(fajrTime),
-      dhuhr: createTimeFromHours(dhuhrTime),
-      asr: createTimeFromHours(asrTime),
-      maghrib: createTimeFromHours(maghribTime),
-      isha: createTimeFromHours(ishaTime),
-      location: `${latitude.toFixed(2)}, ${longitude.toFixed(2)}`,
-    };
-  }
+    const fajrDate = createTimeFromHours(fajrTime);
+    const dhuhrDate = createTimeFromHours(dhuhrTime);
+    const asrDate = createTimeFromHours(asrTime);
+    const maghribDate = createTimeFromHours(maghribTime);
+    const ishaDate = createTimeFromHours(ishaTime);
 
-  static getPrayerTimesList(prayerData: PrayerTimesData): PrayerTime[] {
+    // Determine next prayer
     const now = new Date();
-    const prayers: PrayerTime[] = [
-      { name: 'Fajr', time: prayerData.fajr, arabicName: 'الفجر', isNext: false },
-      { name: 'Dhuhr', time: prayerData.dhuhr, arabicName: 'الظهر', isNext: false },
-      { name: 'Asr', time: prayerData.asr, arabicName: 'العصر', isNext: false },
-      { name: 'Maghrib', time: prayerData.maghrib, arabicName: 'المغرب', isNext: false },
-      { name: 'Isha', time: prayerData.isha, arabicName: 'العشاء', isNext: false },
+    const prayers = [
+      { name: 'fajr', time: fajrDate },
+      { name: 'dhuhr', time: dhuhrDate },
+      { name: 'asr', time: asrDate },
+      { name: 'maghrib', time: maghribDate },
+      { name: 'isha', time: ishaDate },
     ];
 
-    // Find next prayer
-    let nextPrayerIndex = -1;
-    for (let i = 0; i < prayers.length; i++) {
-      if (prayers[i].time > now) {
-        nextPrayerIndex = i;
+    let nextPrayerName = 'fajr'; // Default to fajr if all prayers have passed
+    for (const prayer of prayers) {
+      if (prayer.time > now) {
+        nextPrayerName = prayer.name;
         break;
       }
     }
 
-    // If no prayer found for today, next prayer is Fajr tomorrow
-    if (nextPrayerIndex === -1) {
-      nextPrayerIndex = 0;
-    }
+    return {
+      fajr: {
+        name: 'Fajr',
+        time: fajrDate,
+        arabicName: 'الفجر',
+        isNext: nextPrayerName === 'fajr',
+      },
+      dhuhr: {
+        name: 'Dhuhr',
+        time: dhuhrDate,
+        arabicName: 'الظهر',
+        isNext: nextPrayerName === 'dhuhr',
+      },
+      asr: {
+        name: 'Asr',
+        time: asrDate,
+        arabicName: 'العصر',
+        isNext: nextPrayerName === 'asr',
+      },
+      maghrib: {
+        name: 'Maghrib',
+        time: maghribDate,
+        arabicName: 'المغرب',
+        isNext: nextPrayerName === 'maghrib',
+      },
+      isha: {
+        name: 'Isha',
+        time: ishaDate,
+        arabicName: 'العشاء',
+        isNext: nextPrayerName === 'isha',
+      },
+      location: `${this.latitude.toFixed(2)}, ${this.longitude.toFixed(2)}`,
+    };
+  }
 
-    prayers[nextPrayerIndex].isNext = true;
-    return prayers;
+  static calculatePrayerTimes(latitude: number, longitude: number, date: Date = new Date()): PrayerTimesData {
+    const calculator = new PrayerCalculator(latitude, longitude);
+    return calculator.getTodayPrayerTimes(date);
+  }
+
+  static getPrayerTimesList(prayerData: PrayerTimesData): PrayerTime[] {
+    return [
+      prayerData.fajr,
+      prayerData.dhuhr,
+      prayerData.asr,
+      prayerData.maghrib,
+      prayerData.isha,
+    ];
   }
 }
 

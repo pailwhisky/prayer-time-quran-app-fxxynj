@@ -6,7 +6,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  interpolate,
 } from 'react-native-reanimated';
 import { getQiblaDirection } from '@/utils/prayerTimes';
 import { colors } from '@/styles/commonStyles';
@@ -23,36 +22,56 @@ const COMPASS_SIZE = Dimensions.get('window').width * 0.7;
 export default function QiblaCompass({ latitude, longitude, visible = true, onClose }: QiblaCompassProps) {
   const [deviceHeading, setDeviceHeading] = useState(0);
   const [qiblaDirection, setQiblaDirection] = useState(0);
-  const [subscription, setSubscription] = useState<any>(null);
   const qiblaRotation = useSharedValue(0);
 
   const subscribeMagnetometer = useCallback(() => {
-    const sub = Magnetometer.addListener((data) => {
+    console.log('Subscribing to magnetometer...');
+    
+    const subscription = Magnetometer.addListener((data) => {
       const { x, y } = data;
       let angle = Math.atan2(y, x) * (180 / Math.PI);
       angle = (angle + 360) % 360;
       setDeviceHeading(angle);
     });
-    setSubscription(sub);
+
+    return subscription;
   }, []);
 
   useEffect(() => {
+    let subscription: any = null;
+
     if (visible) {
-      Magnetometer.setUpdateInterval(100);
-      subscribeMagnetometer();
+      try {
+        Magnetometer.setUpdateInterval(100);
+        subscription = subscribeMagnetometer();
+      } catch (error) {
+        console.error('Error setting up magnetometer:', error);
+        Alert.alert(
+          'Sensor Error',
+          'Unable to access device magnetometer. Please ensure location and sensor permissions are granted.'
+        );
+      }
     }
 
     return () => {
       if (subscription) {
-        subscription.remove();
+        try {
+          subscription.remove();
+        } catch (error) {
+          console.log('Error removing magnetometer subscription:', error);
+        }
       }
     };
-  }, [visible, subscribeMagnetometer, subscription]);
+  }, [visible, subscribeMagnetometer]);
 
   useEffect(() => {
-    const direction = getQiblaDirection(latitude, longitude);
-    setQiblaDirection(direction);
-    console.log('Qibla direction calculated:', direction);
+    try {
+      const direction = getQiblaDirection(latitude, longitude);
+      setQiblaDirection(direction);
+      console.log('Qibla direction calculated:', direction);
+    } catch (error) {
+      console.error('Error calculating Qibla direction:', error);
+    }
   }, [latitude, longitude]);
 
   useEffect(() => {

@@ -1,7 +1,8 @@
+
 {
   "expo": {
-    "name": "Natively",
-    "slug": "Natively",
+    "name": "Prayer Times - Islamic Companion",
+    "slug": "prayer-times-islamic",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -10,38 +11,87 @@
     "splash": {
       "image": "./assets/images/natively-dark.png",
       "resizeMode": "contain",
-      "backgroundColor": "#000000"
+      "backgroundColor": "#004643"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.Natively",
+      "bundleIdentifier": "com.prayertimes.islamic",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
-      }
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "We need your location to calculate accurate prayer times and Qibla direction for your area.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "We need your location to calculate accurate prayer times and Qibla direction for your area.",
+        "NSMotionUsageDescription": "We need access to your device's sensors to show the Qibla direction using the compass.",
+        "NSCalendarsUsageDescription": "We need access to your calendar to add prayer time reminders.",
+        "NSRemindersUsageDescription": "We need access to reminders to notify you of prayer times."
+      },
+      "buildNumber": "1"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/natively-dark.png",
-        "backgroundColor": "#000000"
+        "backgroundColor": "#004643"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.Natively"
+      "package": "com.prayertimes.islamic",
+      "versionCode": 1,
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
     "web": {
       "favicon": "./assets/images/final_quest_240x240.png",
-      "bundler": "metro"
+      "bundler": "metro",
+      "name": "Prayer Times - Islamic Companion",
+      "shortName": "Prayer Times",
+      "description": "Your comprehensive Islamic companion for prayer times, Qibla direction, Quran reading, and spiritual growth.",
+      "themeColor": "#004643",
+      "backgroundColor": "#F5F5DC"
     },
     "plugins": [
       "expo-font",
       "expo-router",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "We need your location to calculate accurate prayer times and Qibla direction for your area."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/natively-dark.png",
+          "color": "#004643",
+          "sounds": []
+        }
+      ],
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "We need access to your device's sensors to show the Qibla direction using the compass."
+        }
+      ]
     ],
-    "scheme": "natively",
+    "scheme": "prayertimes",
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "router": {}
-    }
+      "router": {},
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    },
+    "owner": "your-expo-username",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ]
   }
 }

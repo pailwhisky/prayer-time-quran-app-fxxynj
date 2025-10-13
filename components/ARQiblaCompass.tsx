@@ -1,14 +1,9 @@
 
 import { getQiblaDirection } from '@/utils/prayerTimes';
 import NavigationHeader from '@/components/NavigationHeader';
-import * as Location from 'expo-location';
 import { IconSymbol } from '@/components/IconSymbol';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
+import * as Location from 'expo-location';
+import { Magnetometer } from 'expo-sensors';
 import { colors } from '@/styles/commonStyles';
 import {
   View,
@@ -21,39 +16,42 @@ import {
   Platform,
 } from 'react-native';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Magnetometer } from 'expo-sensors';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 interface ARQiblaCompassProps {
   visible: boolean;
   onClose: () => void;
 }
 
-const COMPASS_SIZE = Dimensions.get('window').width * 0.75;
+const COMPASS_SIZE = Dimensions.get('window').width * 0.8;
 
 export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps) {
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [deviceHeading, setDeviceHeading] = useState(0);
   const [qiblaDirection, setQiblaDirection] = useState(0);
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscription, setSubscription] = useState<any>(null);
-  
+
   const qiblaRotation = useSharedValue(0);
   const compassRotation = useSharedValue(0);
 
-  // Initialize compass and location
   const initializeCompass = useCallback(async () => {
     try {
+      console.log('Initializing AR Qibla Compass...');
       setLoading(true);
-      console.log('🧭 Initializing AR Qibla Compass...');
 
       // Request location permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert(
-          'Location Permission Required',
-          'Location access is needed to determine Qibla direction.',
-          [{ text: 'OK', onPress: onClose }]
+          'Permission Required',
+          'Location permission is required to determine Qibla direction.'
         );
+        setLoading(false);
         return;
       }
 
@@ -62,6 +60,7 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
         accuracy: Location.Accuracy.Balanced,
       });
       setLocation(currentLocation);
+      console.log('Location obtained:', currentLocation.coords);
 
       // Calculate Qibla direction
       const direction = getQiblaDirection(
@@ -69,48 +68,50 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
         currentLocation.coords.longitude
       );
       setQiblaDirection(direction);
-      console.log('✅ Qibla direction calculated:', direction);
+      console.log('Qibla direction:', direction);
 
-      // Start magnetometer
+      // Set up magnetometer
       Magnetometer.setUpdateInterval(100);
-      const sub = Magnetometer.addListener((data) => {
+      const subscription = Magnetometer.addListener((data) => {
         const { x, y } = data;
         let angle = Math.atan2(y, x) * (180 / Math.PI);
         angle = (angle + 360) % 360;
         setDeviceHeading(angle);
       });
-      setSubscription(sub);
-      console.log('✅ Magnetometer started');
 
       setLoading(false);
+
+      // Return cleanup function
+      return () => {
+        try {
+          subscription.remove();
+        } catch (error) {
+          console.log('Error removing magnetometer subscription:', error);
+        }
+      };
     } catch (error) {
       console.error('Error initializing compass:', error);
-      Alert.alert(
-        'Error',
-        'Unable to initialize compass. Please check your device sensors.',
-        [{ text: 'OK', onPress: onClose }]
-      );
+      Alert.alert('Error', 'Failed to initialize compass. Please try again.');
       setLoading(false);
     }
-  }, [onClose]);
+  }, []);
 
-  // Initialize when visible
   useEffect(() => {
+    let cleanup: (() => void) | undefined;
+
     if (visible) {
-      initializeCompass();
+      initializeCompass().then((cleanupFn) => {
+        cleanup = cleanupFn;
+      });
     }
 
-    // Cleanup function
     return () => {
-      if (subscription) {
-        console.log('🧹 Cleaning up magnetometer subscription');
-        subscription.remove();
-        setSubscription(null);
+      if (cleanup) {
+        cleanup();
       }
     };
   }, [visible, initializeCompass]);
 
-  // Update compass rotation
   useEffect(() => {
     if (!loading && location) {
       const targetRotation = qiblaDirection - deviceHeading;
@@ -118,10 +119,9 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
         damping: 15,
         stiffness: 100,
       });
-      
-      compassRotation.value = withSpring(-deviceHeading, {
-        damping: 15,
-        stiffness: 100,
+
+      compassRotation.value = withTiming(-deviceHeading, {
+        duration: 100,
       });
     }
   }, [deviceHeading, qiblaDirection, loading, location, qiblaRotation, compassRotation]);
@@ -138,35 +138,37 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
     };
   });
 
-  const getDistanceToKaaba = () => {
+  const getDistanceToKaaba = (): string => {
     if (!location) return 'Calculating...';
-    
+
     const kaabaLat = 21.4225;
     const kaabaLng = 39.8262;
-    
+
     const R = 6371; // Earth's radius in km
-    const dLat = (kaabaLat - location.coords.latitude) * (Math.PI / 180);
-    const dLon = (kaabaLng - location.coords.longitude) * (Math.PI / 180);
-    
+    const dLat = ((kaabaLat - location.coords.latitude) * Math.PI) / 180;
+    const dLon = ((kaabaLng - location.coords.longitude) * Math.PI) / 180;
+
     const a =
       Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(location.coords.latitude * (Math.PI / 180)) *
-      Math.cos(kaabaLat * (Math.PI / 180)) *
-      Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    
+      Math.cos((location.coords.latitude * Math.PI) / 180) *
+        Math.cos((kaabaLat * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const distance = R * c;
-    
-    return `${Math.round(distance).toLocaleString()} km`;
+
+    return `${Math.round(distance)} km`;
   };
 
   const renderARView = () => {
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>🧭</Text>
-          <Text style={styles.loadingTitle}>Initializing Compass</Text>
-          <Text style={styles.loadingSubtitle}>Calibrating sensors...</Text>
+          <Text style={styles.loadingText}>Initializing compass...</Text>
+          <Text style={styles.loadingSubtext}>
+            Please ensure location and sensor permissions are granted
+          </Text>
         </View>
       );
     }
@@ -179,53 +181,94 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
             <Text style={[styles.directionLabel, styles.eastLabel]}>E</Text>
             <Text style={[styles.directionLabel, styles.southLabel]}>S</Text>
             <Text style={[styles.directionLabel, styles.westLabel]}>W</Text>
-            
-            <Animated.View style={[styles.arrow, arrowStyle]}>
-              <View style={styles.arrowHead} />
-              <View style={styles.arrowBody} />
-            </Animated.View>
+
+            <View style={styles.centerDot} />
+
+            {/* Compass markings */}
+            {[...Array(36)].map((_, i) => {
+              const angle = i * 10;
+              const isCardinal = angle % 90 === 0;
+              const isMajor = angle % 30 === 0;
+
+              return (
+                <View
+                  key={i}
+                  style={[
+                    styles.compassMark,
+                    {
+                      transform: [
+                        { rotate: `${angle}deg` },
+                        { translateY: -COMPASS_SIZE / 2 + 20 },
+                      ],
+                    },
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.mark,
+                      isCardinal
+                        ? styles.cardinalMark
+                        : isMajor
+                        ? styles.majorMark
+                        : styles.minorMark,
+                    ]}
+                  />
+                </View>
+              );
+            })}
+          </Animated.View>
+
+          <Animated.View style={[styles.qiblaArrow, arrowStyle]}>
+            <View style={styles.arrowHead} />
+            <View style={styles.arrowBody} />
+            <Text style={styles.qiblaLabel}>QIBLA</Text>
           </Animated.View>
         </View>
 
-        <View style={styles.infoContainer}>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Qibla Direction</Text>
-            <Text style={styles.infoValue}>{Math.round(qiblaDirection)}°</Text>
+        <View style={styles.infoPanel}>
+          <View style={styles.infoRow}>
+            <IconSymbol name="explore" size={24} color={colors.primary} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Qibla Direction</Text>
+              <Text style={styles.infoValue}>{Math.round(qiblaDirection)}°</Text>
+            </View>
           </View>
-          
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Device Heading</Text>
-            <Text style={styles.infoValue}>{Math.round(deviceHeading)}°</Text>
+
+          <View style={styles.infoRow}>
+            <IconSymbol name="navigation" size={24} color={colors.accent} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Device Heading</Text>
+              <Text style={styles.infoValue}>{Math.round(deviceHeading)}°</Text>
+            </View>
           </View>
-          
-          <View style={styles.infoCard}>
-            <Text style={styles.infoLabel}>Distance to Kaaba</Text>
-            <Text style={styles.infoValue}>{getDistanceToKaaba()}</Text>
+
+          <View style={styles.infoRow}>
+            <IconSymbol name="place" size={24} color={colors.highlight} />
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Distance to Kaaba</Text>
+              <Text style={styles.infoValue}>{getDistanceToKaaba()}</Text>
+            </View>
           </View>
         </View>
 
-        <Text style={styles.instructionText}>
-          Point your device towards the green arrow to face the Qibla
-        </Text>
+        <View style={styles.instructionsContainer}>
+          <Text style={styles.instructionsText}>
+            Hold your device flat and rotate until the arrow points upward
+          </Text>
+        </View>
       </View>
     );
   };
 
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.container}>
         <NavigationHeader
           title="AR Qibla Compass"
           showBack={false}
           showClose={true}
-          onClosePress={onClose}
+          onClose={onClose}
         />
-        
         {renderARView()}
       </View>
     </Modal>
@@ -244,42 +287,40 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   loadingText: {
-    fontSize: 64,
-    marginBottom: 20,
-  },
-  loadingTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 8,
+    marginBottom: 12,
   },
-  loadingSubtitle: {
-    fontSize: 16,
+  loadingSubtext: {
+    fontSize: 14,
     color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   arContainer: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
+    justifyContent: 'space-between',
+    paddingVertical: 20,
   },
   compassContainer: {
     width: COMPASS_SIZE,
     height: COMPASS_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 40,
+    marginTop: 20,
   },
   compass: {
     width: COMPASS_SIZE,
     height: COMPASS_SIZE,
     borderRadius: COMPASS_SIZE / 2,
     backgroundColor: colors.card,
-    borderWidth: 4,
+    borderWidth: 3,
     borderColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: `0 8px 16px ${colors.shadow}`,
+    boxShadow: `0 8px 24px ${colors.shadow}`,
     elevation: 8,
   },
   directionLabel: {
@@ -300,7 +341,37 @@ const styles = StyleSheet.create({
   westLabel: {
     left: 15,
   },
-  arrow: {
+  centerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary,
+  },
+  compassMark: {
+    position: 'absolute',
+    width: 2,
+    alignItems: 'center',
+  },
+  mark: {
+    backgroundColor: colors.border,
+  },
+  cardinalMark: {
+    width: 3,
+    height: 20,
+    backgroundColor: colors.primary,
+  },
+  majorMark: {
+    width: 2,
+    height: 15,
+    backgroundColor: colors.textSecondary,
+  },
+  minorMark: {
+    width: 1,
+    height: 10,
+    backgroundColor: colors.border,
+  },
+  qiblaArrow: {
+    position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -312,49 +383,61 @@ const styles = StyleSheet.create({
     borderBottomWidth: 50,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
-    borderBottomColor: '#4CAF50',
+    borderBottomColor: colors.highlight,
   },
   arrowBody: {
     width: 10,
     height: 100,
-    backgroundColor: '#4CAF50',
+    backgroundColor: colors.highlight,
     borderRadius: 5,
   },
-  infoContainer: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    gap: 12,
+  qiblaLabel: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.highlight,
+    letterSpacing: 2,
   },
-  infoCard: {
-    flex: 1,
+  infoPanel: {
+    width: '90%',
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: `0 2px 4px ${colors.shadow}`,
-    elevation: 2,
+    boxShadow: `0 4px 12px ${colors.shadow}`,
+    elevation: 4,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  infoContent: {
+    flex: 1,
   },
   infoLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 4,
-    textAlign: 'center',
   },
   infoValue: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: colors.primary,
-    textAlign: 'center',
+    color: colors.text,
   },
-  instructionText: {
-    fontSize: 16,
+  instructionsContainer: {
+    width: '90%',
+    backgroundColor: `${colors.primary}15`,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+  },
+  instructionsText: {
+    fontSize: 14,
     color: colors.text,
     textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 20,
+    lineHeight: 20,
   },
 });

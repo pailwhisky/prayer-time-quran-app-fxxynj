@@ -6,6 +6,10 @@ import PrayerTimeItem from '@/components/PrayerTimeItem';
 import * as Location from 'expo-location';
 import { PrayerCalculator, PrayerTimesData, PrayerTime } from '@/utils/prayerTimes';
 import { colors } from '@/styles/commonStyles';
+import { Stack } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect, useCallback } from 'react';
+import * as Notifications from 'expo-notifications';
 import {
   View,
   Text,
@@ -15,11 +19,8 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { Stack } from 'expo-router';
-import React, { useState, useEffect, useCallback } from 'react';
-import * as Notifications from 'expo-notifications';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Configure notification handler
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -29,121 +30,164 @@ Notifications.setNotificationHandler({
 });
 
 export default function PrayerTimesScreen() {
-  const [prayerTimes, setPrayerTimes] = useState<PrayerTimesData | null>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [prayerTimes, setPrayerTimes] = useState<PrayerTimesData | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState(false);
 
-  const initializeApp = useCallback(async () => {
+  // Request notification permissions
+  const requestNotificationPermissions = useCallback(async () => {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus === 'granted') {
+        console.log('✅ Notification permissions granted');
+        setNotificationPermission(true);
+      } else {
+        console.log('⚠️ Notification permissions denied');
+        setNotificationPermission(false);
+      }
+    } catch (error) {
+      console.error('Error requesting notification permissions:', error);
+    }
+  }, []);
+
+  // Request location and load prayer times
+  const requestLocationAndLoadPrayerTimes = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Initializing prayer times app...');
+      setLocationError(null);
+      console.log('📍 Requesting location permission...');
 
       const { status } = await Location.requestForegroundPermissionsAsync();
+      
       if (status !== 'granted') {
+        setLocationError('Location permission is required to calculate accurate prayer times.');
         Alert.alert(
           'Location Permission Required',
-          'This app needs your location to calculate accurate prayer times.',
+          'This app needs your location to provide accurate prayer times for your area.',
           [{ text: 'OK' }]
         );
         setLoading(false);
         return;
       }
 
-      console.log('Getting current location...');
+      console.log('✅ Location permission granted, getting current location...');
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
+      
+      console.log('📍 Location obtained:', currentLocation.coords.latitude, currentLocation.coords.longitude);
       setLocation(currentLocation);
-      console.log('Location obtained:', currentLocation.coords);
 
+      // Calculate prayer times
       const times = PrayerCalculator.calculatePrayerTimes(
         currentLocation.coords.latitude,
-        currentLocation.coords.longitude,
-        new Date()
+        currentLocation.coords.longitude
       );
+      
+      console.log('🕌 Prayer times calculated:', times);
       setPrayerTimes(times);
-      console.log('Prayer times calculated:', times);
 
-      setLoading(false);
+      // Schedule notifications for prayer times
+      if (notificationPermission) {
+        await schedulePrayerNotifications(times);
+      }
     } catch (error) {
-      console.error('Error initializing app:', error);
-      Alert.alert('Error', 'Failed to get location. Please try again.');
+      console.error('Error getting location or calculating prayer times:', error);
+      setLocationError('Unable to get your location. Please check your device settings.');
+      Alert.alert(
+        'Error',
+        'Unable to get your location. Please ensure location services are enabled.',
+        [{ text: 'OK' }]
+      );
+    } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  }, []);
+  }, [notificationPermission]);
 
-  const setupNotifications = useCallback(async () => {
+  // Schedule notifications for prayer times
+  const schedulePrayerNotifications = async (times: PrayerTimesData) => {
     try {
-      if (Platform.OS === 'web') {
-        console.log('Notifications not supported on web');
-        return;
+      // Cancel all existing notifications
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      console.log('🔔 Scheduling prayer notifications...');
+
+      const prayers = PrayerCalculator.getPrayerTimesList(times);
+      
+      for (const prayer of prayers) {
+        const now = new Date();
+        if (prayer.time > now) {
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: `${prayer.name} Prayer Time`,
+              body: `It's time for ${prayer.name} prayer (${prayer.arabicName})`,
+              sound: true,
+              priority: Notifications.AndroidNotificationPriority.HIGH,
+            },
+            trigger: {
+              date: prayer.time,
+            },
+          });
+          console.log(`✅ Notification scheduled for ${prayer.name} at ${prayer.time.toLocaleTimeString()}`);
+        }
       }
-
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-
-      if (finalStatus !== 'granted') {
-        console.log('Notification permission not granted');
-        return;
-      }
-
-      console.log('Notification permissions granted');
     } catch (error) {
-      console.error('Error setting up notifications:', error);
+      console.error('Error scheduling notifications:', error);
     }
-  }, []);
+  };
 
+  // Initialize on mount
   useEffect(() => {
-    initializeApp();
-    setupNotifications();
+    requestNotificationPermissions();
+    requestLocationAndLoadPrayerTimes();
   }, []);
 
+  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-    }, 1000);
+    }, 60000); // Update every minute
 
     return () => clearInterval(timer);
   }, []);
 
+  // Recalculate next prayer when time changes
   useEffect(() => {
     if (prayerTimes && location) {
-      const now = new Date();
-      const prayers = PrayerCalculator.getPrayerTimesList(prayerTimes);
-      
-      prayers.forEach((prayer) => {
-        if (prayer.isNext && prayer.time > now) {
-          const timeUntil = prayer.time.getTime() - now.getTime();
-          console.log(`Next prayer: ${prayer.name} in ${Math.floor(timeUntil / 60000)} minutes`);
-        }
-      });
+      const updatedTimes = PrayerCalculator.calculatePrayerTimes(
+        location.coords.latitude,
+        location.coords.longitude
+      );
+      setPrayerTimes(updatedTimes);
     }
-  }, [prayerTimes, currentTime]);
+  }, [currentTime]);
 
-  const onRefresh = useCallback(async () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
-    await initializeApp();
-    setRefreshing(false);
-  }, [initializeApp]);
+    requestLocationAndLoadPrayerTimes();
+  }, [requestLocationAndLoadPrayerTimes]);
 
   const formatCurrentTime = () => {
     return currentTime.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit',
       hour12: true,
     });
   };
 
   const getLocationString = () => {
-    if (!location) return 'Getting location...';
+    if (!location) return 'Loading location...';
     return `${location.coords.latitude.toFixed(2)}°, ${location.coords.longitude.toFixed(2)}°`;
   };
 
@@ -159,13 +203,31 @@ export default function PrayerTimesScreen() {
     return now > prayerTimes.isha.time;
   };
 
-  if (loading) {
+  if (loading && !prayerTimes) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <Stack.Screen options={{ headerShown: false }} />
         <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
+        
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading prayer times...</Text>
+          <Text style={styles.loadingText}>🕌</Text>
+          <Text style={styles.loadingTitle}>Loading Prayer Times</Text>
+          <Text style={styles.loadingSubtitle}>Getting your location...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (locationError && !prayerTimes) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
+        
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorIcon}>📍</Text>
+          <Text style={styles.errorTitle}>Location Required</Text>
+          <Text style={styles.errorText}>{locationError}</Text>
         </View>
       </SafeAreaView>
     );
@@ -175,11 +237,16 @@ export default function PrayerTimesScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
+      <NavigationHeader
+        title="Prayer Times"
+        showBack={false}
+        showClose={false}
+      />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -188,19 +255,27 @@ export default function PrayerTimesScreen() {
             colors={[colors.primary]}
           />
         }
-        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.clockContainer}>
+        {/* Current Time Display */}
+        <View style={styles.timeCard}>
           <Text style={styles.currentTime}>{formatCurrentTime()}</Text>
           <Text style={styles.locationText}>{getLocationString()}</Text>
+          {!notificationPermission && (
+            <Text style={styles.notificationWarning}>
+              ⚠️ Enable notifications to receive prayer reminders
+            </Text>
+          )}
         </View>
 
-        {isBeforeFirstPrayer() && (
-          <QuoteDisplay timing="before" />
-        )}
+        {/* Quran Quote */}
+        <QuoteDisplay 
+          timing={isBeforeFirstPrayer() ? 'before' : isAfterLastPrayer() ? 'after' : 'general'}
+        />
 
+        {/* Prayer Times List */}
         {prayerTimes && (
           <View style={styles.prayerTimesContainer}>
+            <Text style={styles.sectionTitle}>Today&apos;s Prayer Times</Text>
             {PrayerCalculator.getPrayerTimesList(prayerTimes).map((prayer) => (
               <PrayerTimeItem
                 key={prayer.name}
@@ -213,19 +288,19 @@ export default function PrayerTimesScreen() {
           </View>
         )}
 
-        {isAfterLastPrayer() && (
-          <QuoteDisplay timing="after" />
-        )}
-
+        {/* Qibla Compass */}
         {location && (
-          <View style={styles.qiblaContainer}>
+          <View style={styles.qiblaSection}>
+            <Text style={styles.sectionTitle}>Qibla Direction</Text>
             <QiblaCompass
               latitude={location.coords.latitude}
               longitude={location.coords.longitude}
+              visible={true}
             />
           </View>
         )}
 
+        {/* Bottom spacer for floating tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
     </SafeAreaView>
@@ -248,21 +323,54 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
   },
   loadingText: {
-    fontSize: 18,
-    color: colors.text,
-    fontWeight: '600',
+    fontSize: 64,
+    marginBottom: 20,
   },
-  clockContainer: {
+  loadingTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
+  },
+  loadingSubtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
-    padding: 20,
+    padding: 40,
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: 20,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  timeCard: {
     backgroundColor: colors.card,
     borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+    marginBottom: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    boxShadow: `0 4px 8px ${colors.shadow}`,
+    boxShadow: `0px 4px 8px ${colors.shadow}`,
     elevation: 3,
   },
   currentTime: {
@@ -275,10 +383,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
+  notificationWarning: {
+    fontSize: 12,
+    color: colors.highlight,
+    marginTop: 8,
+    textAlign: 'center',
+  },
   prayerTimesContainer: {
     marginBottom: 24,
   },
-  qiblaContainer: {
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 16,
+  },
+  qiblaSection: {
     marginBottom: 24,
   },
   bottomSpacer: {

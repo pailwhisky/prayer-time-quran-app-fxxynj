@@ -36,6 +36,9 @@ const SURAHS: Surah[] = [
   { number: 5, name: 'المائدة', englishName: 'Al-Ma\'idah', englishNameTranslation: 'The Table Spread', numberOfAyahs: 120, revelationType: 'Medinan' },
   { number: 6, name: 'الأنعام', englishName: 'Al-An\'am', englishNameTranslation: 'The Cattle', numberOfAyahs: 165, revelationType: 'Meccan' },
   { number: 7, name: 'الأعراف', englishName: 'Al-A\'raf', englishNameTranslation: 'The Heights', numberOfAyahs: 206, revelationType: 'Meccan' },
+  { number: 8, name: 'الأنفال', englishName: 'Al-Anfal', englishNameTranslation: 'The Spoils of War', numberOfAyahs: 75, revelationType: 'Medinan' },
+  { number: 9, name: 'التوبة', englishName: 'At-Tawbah', englishNameTranslation: 'The Repentance', numberOfAyahs: 129, revelationType: 'Medinan' },
+  { number: 10, name: 'يونس', englishName: 'Yunus', englishNameTranslation: 'Jonah', numberOfAyahs: 109, revelationType: 'Meccan' },
 ];
 
 export default function QuranScreen() {
@@ -73,6 +76,21 @@ export default function QuranScreen() {
     }
   };
 
+  const toggleBookmark = async (surahNumber: number) => {
+    try {
+      let newBookmarks: number[];
+      if (bookmarks.includes(surahNumber)) {
+        newBookmarks = bookmarks.filter(b => b !== surahNumber);
+      } else {
+        newBookmarks = [...bookmarks, surahNumber];
+      }
+      setBookmarks(newBookmarks);
+      await AsyncStorage.setItem('quran_bookmarks', JSON.stringify(newBookmarks));
+    } catch (error) {
+      console.error('Error saving bookmark:', error);
+    }
+  };
+
   const renderSurahCard = (surah: Surah) => {
     const isBookmarked = bookmarks.includes(surah.number);
 
@@ -84,7 +102,13 @@ export default function QuranScreen() {
           Alert.alert(
             surah.englishName,
             `${surah.englishNameTranslation}\n${surah.numberOfAyahs} verses\n${surah.revelationType}`,
-            [{ text: 'OK' }]
+            [
+              { text: 'Cancel', style: 'cancel' },
+              { 
+                text: isBookmarked ? 'Remove Bookmark' : 'Add Bookmark',
+                onPress: () => toggleBookmark(surah.number)
+              }
+            ]
           );
         }}
       >
@@ -101,9 +125,16 @@ export default function QuranScreen() {
           </Text>
         </View>
 
-        {isBookmarked && (
-          <IconSymbol name="bookmark" size={24} color={colors.primary} />
-        )}
+        <TouchableOpacity 
+          onPress={() => toggleBookmark(surah.number)}
+          style={styles.bookmarkButton}
+        >
+          <IconSymbol 
+            name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+            size={24} 
+            color={isBookmarked ? colors.primary : colors.textSecondary} 
+          />
+        </TouchableOpacity>
       </TouchableOpacity>
     );
   };
@@ -144,6 +175,7 @@ export default function QuranScreen() {
           {filteredSurahs.map((surah) => renderSurahCard(surah))}
         </View>
 
+        {/* Bottom spacer for floating tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
     );
@@ -159,7 +191,8 @@ export default function QuranScreen() {
         showClose={false}
       />
 
-      <PremiumGate featureKey="quran_reader" featureName="Quran Reader" requiredTier="free">
+      {/* Changed from premium to free tier - Quran reader is a basic feature */}
+      <PremiumGate featureKey="daily_quotes" featureName="Quran Reader" requiredTier="free">
         {renderContent()}
       </PremiumGate>
     </SafeAreaView>
@@ -257,6 +290,9 @@ const styles = StyleSheet.create({
   surahMeta: {
     fontSize: 12,
     color: colors.textSecondary,
+  },
+  bookmarkButton: {
+    padding: 8,
   },
   bottomSpacer: {
     height: 120,

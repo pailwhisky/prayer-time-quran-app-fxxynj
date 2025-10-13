@@ -11,18 +11,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
-import { IconSymbol } from '@/components/IconSymbol';
-import { useSubscription } from '@/contexts/SubscriptionContext';
-import SubscriptionModal from '@/components/SubscriptionModal';
 import PremiumGate from '@/components/PremiumGate';
 import AdhanPlayer from '@/components/AdhanPlayer';
-import DuaLibrary from '@/components/DuaLibrary';
-import SpiritualProgressTracker from '@/components/SpiritualProgressTracker';
-import HijriCalendar from '@/components/HijriCalendar';
-import MosqueFinder from '@/components/MosqueFinder';
 import VerseOfTheDay from '@/components/VerseOfTheDay';
 import AdvancedNotifications from '@/components/AdvancedNotifications';
+import { useSubscription } from '@/contexts/SubscriptionContext';
+import { IconSymbol } from '@/components/IconSymbol';
+import SpiritualProgressTracker from '@/components/SpiritualProgressTracker';
+import MosqueFinder from '@/components/MosqueFinder';
+import SubscriptionModal from '@/components/SubscriptionModal';
+import DuaLibrary from '@/components/DuaLibrary';
+import HijriCalendar from '@/components/HijriCalendar';
 import ARQiblaCompass from '@/components/ARQiblaCompass';
+import NavigationHeader from '@/components/NavigationHeader';
 
 interface PremiumFeature {
   id: string;
@@ -35,101 +36,96 @@ interface PremiumFeature {
   requiredTier: 'premium' | 'ultra';
 }
 
-const premiumFeatures: PremiumFeature[] = [
+const PREMIUM_FEATURES: PremiumFeature[] = [
   {
-    id: 'adhan_player',
-    title: 'Audio Adhan Player',
-    description: 'Beautiful call to prayer from holy places around the world',
+    id: '1',
+    title: 'Adhan Player',
+    description: 'Beautiful call to prayer from famous muezzins',
     icon: 'volume-up',
     color: colors.primary,
     component: 'AdhanPlayer',
-    featureKey: 'adhan_sounds',
+    featureKey: 'adhan_player',
     requiredTier: 'premium',
   },
   {
-    id: 'ar_qibla',
+    id: '2',
     title: 'AR Qibla Compass',
-    description: 'Augmented reality compass pointing directly to the Kaaba',
+    description: 'Augmented reality Qibla direction finder',
     icon: 'explore',
-    color: colors.highlight,
+    color: colors.accent,
     component: 'ARQiblaCompass',
-    featureKey: 'qibla_direction',
+    featureKey: 'ar_qibla',
     requiredTier: 'premium',
   },
   {
-    id: 'dua_library',
-    title: 'Dua & Dhikr Library',
-    description: 'Comprehensive collection of supplications with Tasbeeh counter',
+    id: '3',
+    title: 'Dua Library',
+    description: 'Comprehensive collection of Islamic supplications',
     icon: 'menu-book',
-    color: colors.secondary,
+    color: colors.highlight,
     component: 'DuaLibrary',
-    featureKey: 'allah_names',
+    featureKey: 'dua_library',
     requiredTier: 'premium',
   },
   {
-    id: 'progress_tracker',
-    title: 'Spiritual Progress Tracker',
-    description: 'Track your daily prayers, Quran reading, and spiritual habits',
-    icon: 'trending-up',
-    color: colors.highlight,
-    component: 'SpiritualProgressTracker',
-    featureKey: 'prayer_times',
-    requiredTier: 'premium',
-  },
-  {
-    id: 'hijri_calendar',
+    id: '4',
     title: 'Islamic Calendar',
-    description: 'Hijri calendar with Islamic events and personal reminders',
+    description: 'Hijri calendar with important Islamic dates',
     icon: 'calendar-today',
-    color: colors.primary,
-    component: 'HijriCalendar',
-    featureKey: 'fasting_tracker',
-    requiredTier: 'premium',
-  },
-  {
-    id: 'mosque_finder',
-    title: 'Nearby Mosque Finder',
-    description: 'Find mosques near you with prayer times and facilities',
-    icon: 'location-on',
     color: colors.secondary,
-    component: 'MosqueFinder',
-    featureKey: 'halal_finder',
+    component: 'HijriCalendar',
+    featureKey: 'islamic_calendar',
     requiredTier: 'premium',
   },
   {
-    id: 'verse_of_day',
-    title: 'Verse of the Day',
-    description: 'Daily Quran verses with mini Quran reader',
-    icon: 'auto-stories',
-    color: colors.highlight,
-    component: 'VerseOfTheDay',
-    featureKey: 'quran_reader',
-    requiredTier: 'premium',
-  },
-  {
-    id: 'advanced_notifications',
-    title: 'Advanced Notifications',
-    description: 'Customizable prayer reminders with different sounds',
-    icon: 'notifications-active',
+    id: '5',
+    title: 'Mosque Finder',
+    description: 'Find nearby mosques with prayer times',
+    icon: 'place',
     color: colors.primary,
-    component: 'AdvancedNotifications',
-    featureKey: 'advanced_notifications',
+    component: 'MosqueFinder',
+    featureKey: 'mosque_finder',
     requiredTier: 'premium',
+  },
+  {
+    id: '6',
+    title: 'Spiritual Progress',
+    description: 'Track your prayers, fasting, and good deeds',
+    icon: 'trending-up',
+    color: colors.accent,
+    component: 'SpiritualProgressTracker',
+    featureKey: 'prayer_stats',
+    requiredTier: 'premium',
+  },
+  {
+    id: '7',
+    title: 'Advanced Notifications',
+    description: 'Customize prayer reminders and sounds',
+    icon: 'notifications',
+    color: colors.highlight,
+    component: 'AdvancedNotifications',
+    featureKey: 'custom_notifications',
+    requiredTier: 'premium',
+  },
+  {
+    id: '8',
+    title: 'Verse of the Day',
+    description: 'Daily inspiring verses with mini Quran reader',
+    icon: 'auto-stories',
+    color: colors.secondary,
+    component: 'VerseOfTheDay',
+    featureKey: 'verse_of_day',
+    requiredTier: 'ultra',
   },
 ];
 
 export default function PremiumScreen() {
-  const { currentTier, subscription, hasFeature, cancelSubscription } = useSubscription();
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [selectedAdhan, setSelectedAdhan] = useState<any>(null);
+  const { subscriptionTier, cancelSubscription } = useSubscription();
 
   const openFeature = (feature: PremiumFeature) => {
-    if (hasFeature(feature.featureKey)) {
-      setActiveModal(feature.id);
-    } else {
-      setShowSubscriptionModal(true);
-    }
+    setActiveModal(feature.component);
   };
 
   const closeModal = () => {
@@ -137,229 +133,160 @@ export default function PremiumScreen() {
   };
 
   const handleAdhanSelection = (recording: any) => {
-    setSelectedAdhan(recording);
-    Alert.alert(
-      'Adhan Selected',
-      `${recording.name} has been set as your default Adhan for prayer notifications.`,
-      [{ text: 'OK' }]
-    );
+    console.log('Selected adhan recording:', recording);
+    closeModal();
   };
 
   const handleCancelSubscription = () => {
     Alert.alert(
       'Cancel Subscription',
-      'Are you sure you want to cancel your subscription? You will lose access to premium features at the end of your billing period.',
+      'Are you sure you want to cancel your subscription? You will lose access to premium features.',
       [
         { text: 'No', style: 'cancel' },
         {
           text: 'Yes, Cancel',
           style: 'destructive',
-          onPress: async () => {
-            const success = await cancelSubscription();
-            if (success) {
-              Alert.alert('Subscription Cancelled', 'Your subscription has been cancelled.');
-            } else {
-              Alert.alert('Error', 'Failed to cancel subscription. Please try again.');
-            }
+          onPress: () => {
+            cancelSubscription();
+            Alert.alert('Subscription Cancelled', 'Your subscription has been cancelled.');
           },
         },
       ]
     );
   };
 
-  const renderSubscriptionStatus = () => {
-    if (currentTier === 'free') {
-      return (
-        <View style={styles.statusCard}>
-          <View style={styles.statusHeader}>
-            <IconSymbol name="info" size={24} color={colors.primary} />
-            <Text style={styles.statusTitle}>Free Plan</Text>
-          </View>
-          <Text style={styles.statusDescription}>
-            You're currently on the free plan. Upgrade to unlock powerful features for your spiritual journey.
-          </Text>
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={() => setShowSubscriptionModal(true)}
-          >
-            <IconSymbol name="star" size={20} color={colors.card} />
-            <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return (
-      <View style={styles.statusCard}>
-        <View style={styles.statusHeader}>
-          <IconSymbol name="check-circle" size={24} color={colors.primary} />
+  const renderSubscriptionStatus = () => (
+    <View style={styles.subscriptionStatus}>
+      <View style={styles.statusHeader}>
+        <IconSymbol
+          name={subscriptionTier === 'free' ? 'lock' : 'check-circle'}
+          size={32}
+          color={subscriptionTier === 'free' ? colors.textSecondary : colors.primary}
+        />
+        <View style={styles.statusInfo}>
           <Text style={styles.statusTitle}>
-            {currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Plan
+            {subscriptionTier === 'free' ? 'Free Plan' : `${subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)} Plan`}
           </Text>
-        </View>
-        <Text style={styles.statusDescription}>
-          You have access to all {currentTier} features. Thank you for your support!
-        </Text>
-        {subscription && (
-          <View style={styles.subscriptionDetails}>
-            <Text style={styles.subscriptionDetailText}>
-              Billing: {subscription.billing_cycle}
-            </Text>
-            {subscription.next_payment_date && (
-              <Text style={styles.subscriptionDetailText}>
-                Next payment: {new Date(subscription.next_payment_date).toLocaleDateString()}
-              </Text>
-            )}
-          </View>
-        )}
-        <View style={styles.subscriptionActions}>
-          {currentTier === 'premium' && (
-            <TouchableOpacity
-              style={styles.upgradeToUltraButton}
-              onPress={() => setShowSubscriptionModal(true)}
-            >
-              <Text style={styles.upgradeToUltraButtonText}>Upgrade to Ultra</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={handleCancelSubscription}
-          >
-            <Text style={styles.cancelButtonText}>Cancel Subscription</Text>
-          </TouchableOpacity>
+          <Text style={styles.statusDescription}>
+            {subscriptionTier === 'free'
+              ? 'Upgrade to unlock premium features'
+              : 'Thank you for your support!'}
+          </Text>
         </View>
       </View>
-    );
-  };
 
-  const renderFeatureCard = (feature: PremiumFeature) => {
-    const hasAccess = hasFeature(feature.featureKey);
+      {subscriptionTier === 'free' ? (
+        <TouchableOpacity
+          style={styles.upgradeButton}
+          onPress={() => setShowSubscriptionModal(true)}
+        >
+          <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+          <IconSymbol name="arrow-forward" size={20} color={colors.card} />
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity
+          style={styles.manageButton}
+          onPress={handleCancelSubscription}
+        >
+          <Text style={styles.manageButtonText}>Manage Subscription</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
 
-    return (
-      <TouchableOpacity
-        key={feature.id}
-        style={[styles.featureCard, { borderLeftColor: feature.color }]}
-        onPress={() => openFeature(feature)}
-      >
-        <View style={styles.featureHeader}>
-          <View style={[styles.featureIcon, { backgroundColor: feature.color }]}>
-            <IconSymbol name={feature.icon} size={24} color={colors.card} />
-          </View>
-          <View style={styles.featureInfo}>
-            <View style={styles.featureTitleRow}>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              {!hasAccess && (
-                <IconSymbol name="lock" size={16} color={colors.highlight} />
-              )}
+  const renderFeatureCard = (feature: PremiumFeature) => (
+    <TouchableOpacity
+      key={feature.id}
+      style={styles.featureCard}
+      onPress={() => openFeature(feature)}
+    >
+      <View style={[styles.featureIcon, { backgroundColor: `${feature.color}20` }]}>
+        <IconSymbol name={feature.icon} size={32} color={feature.color} />
+      </View>
+
+      <View style={styles.featureInfo}>
+        <View style={styles.featureTitleRow}>
+          <Text style={styles.featureTitle}>{feature.title}</Text>
+          {feature.requiredTier === 'ultra' && (
+            <View style={styles.ultraBadge}>
+              <Text style={styles.ultraBadgeText}>ULTRA</Text>
             </View>
-            <Text style={styles.featureDescription}>{feature.description}</Text>
-            {!hasAccess && (
-              <Text style={styles.featureRequirement}>
-                Requires {feature.requiredTier.charAt(0).toUpperCase() + feature.requiredTier.slice(1)}
-              </Text>
-            )}
-          </View>
-          <IconSymbol name="chevron-right" size={20} color={colors.textSecondary} />
+          )}
         </View>
-      </TouchableOpacity>
-    );
-  };
+        <Text style={styles.featureDescription}>{feature.description}</Text>
+      </View>
+
+      <IconSymbol name="chevron-right" size={24} color={colors.textSecondary} />
+    </TouchableOpacity>
+  );
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: 'Premium Features',
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text,
-        }}
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      
+      <NavigationHeader
+        title="Premium Features"
+        showBack={false}
+        showClose={false}
       />
-      <SafeAreaView style={styles.container}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Premium Features</Text>
-            <Text style={styles.subtitle}>
-              Enhance your spiritual journey with these powerful tools
-            </Text>
-          </View>
 
-          {/* Subscription Status */}
-          {renderSubscriptionStatus()}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderSubscriptionStatus()}
 
-          {/* Features Grid */}
-          <View style={styles.featuresContainer}>
-            <Text style={styles.sectionTitle}>Available Features</Text>
-            {premiumFeatures.map(renderFeatureCard)}
-          </View>
+        <Text style={styles.sectionTitle}>Available Features</Text>
 
-          {/* Info Section */}
-          <View style={styles.infoSection}>
-            <View style={styles.infoCard}>
-              <IconSymbol name="info" size={24} color={colors.primary} />
-              <Text style={styles.infoText}>
-                These premium features are designed to deepen your connection with Allah
-                and make your daily prayers more meaningful and organized.
-              </Text>
-            </View>
-          </View>
+        <View style={styles.featuresList}>
+          {PREMIUM_FEATURES.map((feature) => renderFeatureCard(feature))}
+        </View>
 
-          {/* Bottom spacing */}
-          <View style={styles.bottomSpacing} />
-        </ScrollView>
+        {/* Bottom spacer for floating tab bar */}
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
 
-        {/* Modals */}
-        <AdhanPlayer
-          visible={activeModal === 'adhan_player'}
-          onClose={closeModal}
-          onSelectAdhan={handleAdhanSelection}
-        />
+      {/* Feature Modals */}
+      <AdhanPlayer
+        visible={activeModal === 'AdhanPlayer'}
+        onClose={closeModal}
+        onSelectRecording={handleAdhanSelection}
+      />
+      <ARQiblaCompass
+        visible={activeModal === 'ARQiblaCompass'}
+        onClose={closeModal}
+      />
+      <DuaLibrary
+        visible={activeModal === 'DuaLibrary'}
+        onClose={closeModal}
+      />
+      <HijriCalendar
+        visible={activeModal === 'HijriCalendar'}
+        onClose={closeModal}
+      />
+      <MosqueFinder
+        visible={activeModal === 'MosqueFinder'}
+        onClose={closeModal}
+      />
+      <SpiritualProgressTracker
+        visible={activeModal === 'SpiritualProgressTracker'}
+        onClose={closeModal}
+      />
+      <AdvancedNotifications
+        visible={activeModal === 'AdvancedNotifications'}
+        onClose={closeModal}
+      />
+      <VerseOfTheDay
+        visible={activeModal === 'VerseOfTheDay'}
+        onClose={closeModal}
+      />
 
-        <ARQiblaCompass
-          visible={activeModal === 'ar_qibla'}
-          onClose={closeModal}
-        />
-
-        <DuaLibrary
-          visible={activeModal === 'dua_library'}
-          onClose={closeModal}
-        />
-
-        <SpiritualProgressTracker
-          visible={activeModal === 'progress_tracker'}
-          onClose={closeModal}
-        />
-
-        <HijriCalendar
-          visible={activeModal === 'hijri_calendar'}
-          onClose={closeModal}
-        />
-
-        <MosqueFinder
-          visible={activeModal === 'mosque_finder'}
-          onClose={closeModal}
-        />
-
-        <VerseOfTheDay
-          visible={activeModal === 'verse_of_day'}
-          onClose={closeModal}
-        />
-
-        <AdvancedNotifications
-          visible={activeModal === 'advanced_notifications'}
-          onClose={closeModal}
-        />
-
-        <SubscriptionModal
-          visible={showSubscriptionModal}
-          onClose={() => setShowSubscriptionModal(false)}
-        />
-      </SafeAreaView>
-    </>
+      <SubscriptionModal
+        visible={showSubscriptionModal}
+        onClose={() => setShowSubscriptionModal(false)}
+      />
+    </SafeAreaView>
   );
 }
 
@@ -372,65 +299,37 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 16,
-  },
-  header: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
     paddingHorizontal: 20,
+    paddingTop: 20,
   },
-  statusCard: {
+  subscriptionStatus: {
     backgroundColor: colors.card,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
     borderColor: colors.border,
+    boxShadow: `0 4px 8px ${colors.shadow}`,
+    elevation: 3,
   },
   statusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    marginBottom: 16,
+  },
+  statusInfo: {
+    flex: 1,
+    marginLeft: 16,
   },
   statusTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
+    marginBottom: 4,
   },
   statusDescription: {
     fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  subscriptionDetails: {
-    backgroundColor: colors.background,
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-  },
-  subscriptionDetailText: {
-    fontSize: 14,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  subscriptionActions: {
-    gap: 12,
   },
   upgradeButton: {
     flexDirection: 'row',
@@ -438,66 +337,54 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.primary,
     borderRadius: 12,
-    padding: 16,
-    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
   },
   upgradeButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: colors.card,
+    marginRight: 8,
   },
-  upgradeToUltraButton: {
-    backgroundColor: colors.highlight,
-    borderRadius: 12,
-    padding: 14,
+  manageButton: {
     alignItems: 'center',
-  },
-  upgradeToUltraButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: colors.card,
-  },
-  cancelButton: {
-    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
     borderRadius: 12,
-    padding: 14,
-    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: colors.border,
   },
-  cancelButtonText: {
-    fontSize: 14,
+  manageButtonText: {
+    fontSize: 16,
     fontWeight: '600',
-    color: colors.textSecondary,
+    color: colors.text,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 16,
   },
-  featuresContainer: {
-    marginBottom: 24,
+  featuresList: {
+    gap: 12,
   },
   featureCard: {
-    backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderLeftWidth: 4,
-    boxShadow: `0px 4px 8px ${colors.shadow}`,
-    elevation: 3,
-  },
-  featureHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: `0 2px 4px ${colors.shadow}`,
+    elevation: 2,
   },
   featureIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -508,45 +395,31 @@ const styles = StyleSheet.create({
   featureTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
     marginBottom: 4,
   },
   featureTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '600',
     color: colors.text,
+    marginRight: 8,
+  },
+  ultraBadge: {
+    backgroundColor: colors.highlight,
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  ultraBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: colors.card,
   },
   featureDescription: {
     fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 20,
+    lineHeight: 18,
   },
-  featureRequirement: {
-    fontSize: 12,
-    color: colors.highlight,
-    marginTop: 4,
-    fontWeight: '600',
-  },
-  infoSection: {
-    marginBottom: 24,
-  },
-  infoCard: {
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 20,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    borderWidth: 1,
-    borderColor: colors.border,
-    gap: 16,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  bottomSpacing: {
-    height: 100,
+  bottomSpacer: {
+    height: 120,
   },
 });

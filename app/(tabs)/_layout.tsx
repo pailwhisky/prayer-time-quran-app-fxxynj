@@ -2,65 +2,59 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
+import FloatingTabBar from '@/components/FloatingTabBar';
 import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
+  const tabs = [
+    {
+      name: '(home)',
+      route: '/(tabs)/(home)',
+      icon: 'home',
+      label: 'Home',
+    },
+    {
+      name: 'quran',
+      route: '/(tabs)/quran',
+      icon: 'menu-book',
+      label: 'Quran',
+    },
+    {
+      name: 'premium',
+      route: '/(tabs)/premium',
+      icon: 'star',
+      label: 'Premium',
+    },
+    {
+      name: 'profile',
+      route: '/(tabs)/profile',
+      icon: 'person',
+      label: 'Profile',
+    },
+  ];
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.quranGreen,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            position: 'absolute',
-            backgroundColor: colors.card,
-            borderTopColor: colors.border,
-          },
-          default: {
-            backgroundColor: colors.card,
-            borderTopColor: colors.border,
-          },
-        }),
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="(home)"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="home" color={color} />,
+    <>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarStyle: { display: 'none' }, // Hide default tab bar
         }}
+        tabBar={() => null} // Remove default tab bar completely
+      >
+        <Tabs.Screen name="(home)" />
+        <Tabs.Screen name="quran" />
+        <Tabs.Screen name="premium" />
+        <Tabs.Screen name="profile" />
+      </Tabs>
+      
+      {/* Apple Liquid Style Floating Tab Bar - Always visible */}
+      <FloatingTabBar
+        tabs={tabs}
+        containerWidth={340}
+        borderRadius={28}
+        bottomMargin={Platform.OS === 'ios' ? 10 : 20}
       />
-      <Tabs.Screen
-        name="quran"
-        options={{
-          title: 'Quran',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="menu-book" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="premium"
-        options={{
-          title: 'Premium',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person" color={color} />,
-        }}
-      />
-    </Tabs>
+    </>
   );
 }

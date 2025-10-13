@@ -1,16 +1,16 @@
-import { Platform } from 'react-native';
+
 import { Stack } from 'expo-router';
+import React from 'react';
 
 export default function HomeLayout() {
   return (
-    <Stack>
-      <Stack.Screen
-        name="index"
-        options={{
-          headerShown: Platform.OS === 'ios', // Show header on iOS with NativeTabs, hide on Android/Web
-          title: 'Home'
-        }}
-      />
+    <Stack
+      screenOptions={{
+        headerShown: false, // We'll use custom NavigationHeader component
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="prayer-times" />
     </Stack>
   );
 }

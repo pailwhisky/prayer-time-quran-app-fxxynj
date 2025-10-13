@@ -9,19 +9,20 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { colors } from '@/styles/commonStyles';
-import { PrayerTime } from '@/utils/prayerTimes';
 
 interface PrayerTimeItemProps {
-  prayer: PrayerTime;
+  name: string;
+  arabicName: string;
+  time: Date;
+  isNext: boolean;
 }
 
-export default function PrayerTimeItem({ prayer }: PrayerTimeItemProps) {
+export default function PrayerTimeItem({ name, arabicName, time, isNext }: PrayerTimeItemProps) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
 
   useEffect(() => {
-    if (prayer.isNext) {
-      // Gentle pulse animation for next prayer
+    if (isNext) {
       scale.value = withRepeat(
         withSequence(
           withTiming(1.05, { duration: 1000 }),
@@ -43,7 +44,7 @@ export default function PrayerTimeItem({ prayer }: PrayerTimeItemProps) {
       scale.value = withTiming(1, { duration: 300 });
       opacity.value = withTiming(1, { duration: 300 });
     }
-  }, [prayer.isNext, scale, opacity]);
+  }, [isNext, scale, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
@@ -80,31 +81,31 @@ export default function PrayerTimeItem({ prayer }: PrayerTimeItemProps) {
     <Animated.View
       style={[
         styles.container,
-        prayer.isNext && styles.nextPrayerContainer,
+        isNext && styles.nextPrayerContainer,
         animatedStyle,
       ]}
     >
       <View style={styles.leftSection}>
-        <Text style={[styles.prayerName, prayer.isNext && styles.nextPrayerText]}>
-          {prayer.name}
+        <Text style={[styles.prayerName, isNext && styles.nextPrayerText]}>
+          {name}
         </Text>
-        <Text style={[styles.arabicName, prayer.isNext && styles.nextPrayerArabic]}>
-          {prayer.arabicName}
+        <Text style={[styles.arabicName, isNext && styles.nextPrayerArabic]}>
+          {arabicName}
         </Text>
       </View>
       
       <View style={styles.rightSection}>
-        <Text style={[styles.time, prayer.isNext && styles.nextPrayerTime]}>
-          {formatTime(prayer.time)}
+        <Text style={[styles.time, isNext && styles.nextPrayerTime]}>
+          {formatTime(time)}
         </Text>
-        {prayer.isNext && (
+        {isNext && (
           <Text style={styles.timeUntil}>
-            {getTimeUntilPrayer(prayer.time)}
+            {getTimeUntilPrayer(time)}
           </Text>
         )}
       </View>
       
-      {prayer.isNext && (
+      {isNext && (
         <View style={styles.nextIndicator}>
           <Text style={styles.nextText}>NEXT</Text>
         </View>
@@ -152,7 +153,6 @@ const styles = StyleSheet.create({
   arabicName: {
     fontSize: 16,
     color: colors.textSecondary,
-    fontFamily: 'NotoSansArabic_400Regular',
     textAlign: 'left',
   },
   nextPrayerArabic: {

@@ -3,7 +3,6 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
 import FloatingTabBar from '@/components/FloatingTabBar';
-import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
   const tabs = [
@@ -38,17 +37,15 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarStyle: { display: 'none' }, // Hide default tab bar
+          tabBarStyle: { display: 'none' },
         }}
-        tabBar={() => null} // Remove default tab bar completely
       >
-        <Tabs.Screen name="(home)" />
-        <Tabs.Screen name="quran" />
-        <Tabs.Screen name="premium" />
-        <Tabs.Screen name="profile" />
+        <Tabs.Screen name="(home)" options={{ headerShown: false }} />
+        <Tabs.Screen name="quran" options={{ headerShown: false }} />
+        <Tabs.Screen name="premium" options={{ headerShown: false }} />
+        <Tabs.Screen name="profile" options={{ headerShown: false }} />
       </Tabs>
       
-      {/* Apple Liquid Style Floating Tab Bar - Always visible */}
       <FloatingTabBar
         tabs={tabs}
         containerWidth={340}

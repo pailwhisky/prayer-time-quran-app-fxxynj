@@ -34,7 +34,8 @@ const SURAHS: Surah[] = [
   { number: 3, name: 'آل عمران', englishName: 'Ali \'Imran', englishNameTranslation: 'Family of Imran', numberOfAyahs: 200, revelationType: 'Medinan' },
   { number: 4, name: 'النساء', englishName: 'An-Nisa', englishNameTranslation: 'The Women', numberOfAyahs: 176, revelationType: 'Medinan' },
   { number: 5, name: 'المائدة', englishName: 'Al-Ma\'idah', englishNameTranslation: 'The Table Spread', numberOfAyahs: 120, revelationType: 'Medinan' },
-  // Add more surahs as needed
+  { number: 6, name: 'الأنعام', englishName: 'Al-An\'am', englishNameTranslation: 'The Cattle', numberOfAyahs: 165, revelationType: 'Meccan' },
+  { number: 7, name: 'الأعراف', englishName: 'Al-A\'raf', englishNameTranslation: 'The Heights', numberOfAyahs: 206, revelationType: 'Meccan' },
 ];
 
 export default function QuranScreen() {
@@ -42,7 +43,6 @@ export default function QuranScreen() {
   const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>(SURAHS);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
-  const { hasFeatureAccess } = useSubscription();
 
   useEffect(() => {
     loadBookmarks();
@@ -144,7 +144,6 @@ export default function QuranScreen() {
           {filteredSurahs.map((surah) => renderSurahCard(surah))}
         </View>
 
-        {/* Bottom spacer for floating tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
     );
@@ -160,7 +159,7 @@ export default function QuranScreen() {
         showClose={false}
       />
 
-      <PremiumGate featureKey="quran_reader" requiredTier="premium">
+      <PremiumGate featureKey="quran_reader" featureName="Quran Reader" requiredTier="free">
         {renderContent()}
       </PremiumGate>
     </SafeAreaView>
@@ -242,7 +241,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
-    fontFamily: 'Amiri_700Bold',
     marginBottom: 4,
   },
   surahNameEnglish: {

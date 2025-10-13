@@ -8,7 +8,7 @@ import SubscriptionModal from '@/components/SubscriptionModal';
 
 interface PremiumGateProps {
   featureKey: string;
-  featureName: string;
+  featureName?: string;
   requiredTier?: SubscriptionTier;
   children: React.ReactNode;
   showUpgradePrompt?: boolean;
@@ -16,7 +16,7 @@ interface PremiumGateProps {
 
 export default function PremiumGate({
   featureKey,
-  featureName,
+  featureName = 'This feature',
   requiredTier = 'premium',
   children,
   showUpgradePrompt = true,

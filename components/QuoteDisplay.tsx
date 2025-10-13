@@ -8,27 +8,23 @@ import { generateEnhancedQuranQuote } from '@/utils/geminiService';
 import { IconSymbol } from '@/components/IconSymbol';
 
 interface QuoteDisplayProps {
-  isBeforeFirstPrayer?: boolean;
-  isAfterLastPrayer?: boolean;
-  shouldRefresh?: boolean;
+  timing?: 'before' | 'after' | 'general';
 }
 
-export default function QuoteDisplay({ 
-  isBeforeFirstPrayer = false, 
-  isAfterLastPrayer = false,
-  shouldRefresh = false 
-}: QuoteDisplayProps) {
+export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) {
   const [quote, setQuote] = useState<QuranQuote | null>(null);
   const [enhancedQuote, setEnhancedQuote] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [showEnhanced, setShowEnhanced] = useState(false);
   const [loadingEnhanced, setLoadingEnhanced] = useState(false);
 
+  const isBeforeFirstPrayer = timing === 'before';
+  const isAfterLastPrayer = timing === 'after';
+
   const loadQuote = useCallback(async () => {
     try {
       setLoading(true);
       
-      // Use specific quotes for prayer times, or fetch random one
       if (isBeforeFirstPrayer || isAfterLastPrayer) {
         const specificQuote = getQuoteForTime(isBeforeFirstPrayer, isAfterLastPrayer);
         setQuote(specificQuote);
@@ -38,7 +34,6 @@ export default function QuoteDisplay({
       }
     } catch (error) {
       console.error('Error loading quote:', error);
-      // Fallback quote
       setQuote({
         text: "And establish prayer and give zakah and bow with those who bow.",
         reference: "Quran 2:43",
@@ -70,7 +65,7 @@ export default function QuoteDisplay({
 
   useEffect(() => {
     loadQuote();
-  }, [loadQuote, shouldRefresh]);
+  }, [loadQuote]);
 
   if (loading || !quote) {
     return (
@@ -184,7 +179,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 28,
-    fontFamily: 'Amiri_400Regular',
     fontWeight: '500',
   },
   quoteText: {

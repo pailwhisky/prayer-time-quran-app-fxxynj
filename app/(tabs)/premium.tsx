@@ -11,7 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
-import PremiumGate from '@/components/PremiumGate';
 import AdhanPlayer from '@/components/AdhanPlayer';
 import VerseOfTheDay from '@/components/VerseOfTheDay';
 import AdvancedNotifications from '@/components/AdvancedNotifications';
@@ -122,7 +121,7 @@ const PREMIUM_FEATURES: PremiumFeature[] = [
 export default function PremiumScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const { subscriptionTier, cancelSubscription } = useSubscription();
+  const { currentTier, cancelSubscription } = useSubscription();
 
   const openFeature = (feature: PremiumFeature) => {
     setActiveModal(feature.component);
@@ -146,9 +145,13 @@ export default function PremiumScreen() {
         {
           text: 'Yes, Cancel',
           style: 'destructive',
-          onPress: () => {
-            cancelSubscription();
-            Alert.alert('Subscription Cancelled', 'Your subscription has been cancelled.');
+          onPress: async () => {
+            const success = await cancelSubscription();
+            if (success) {
+              Alert.alert('Subscription Cancelled', 'Your subscription has been cancelled.');
+            } else {
+              Alert.alert('Error', 'Failed to cancel subscription. Please try again.');
+            }
           },
         },
       ]
@@ -159,23 +162,23 @@ export default function PremiumScreen() {
     <View style={styles.subscriptionStatus}>
       <View style={styles.statusHeader}>
         <IconSymbol
-          name={subscriptionTier === 'free' ? 'lock' : 'check-circle'}
+          name={currentTier === 'free' ? 'lock' : 'check-circle'}
           size={32}
-          color={subscriptionTier === 'free' ? colors.textSecondary : colors.primary}
+          color={currentTier === 'free' ? colors.textSecondary : colors.primary}
         />
         <View style={styles.statusInfo}>
           <Text style={styles.statusTitle}>
-            {subscriptionTier === 'free' ? 'Free Plan' : `${subscriptionTier.charAt(0).toUpperCase() + subscriptionTier.slice(1)} Plan`}
+            {currentTier === 'free' ? 'Free Plan' : `${currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Plan`}
           </Text>
           <Text style={styles.statusDescription}>
-            {subscriptionTier === 'free'
+            {currentTier === 'free'
               ? 'Upgrade to unlock premium features'
               : 'Thank you for your support!'}
           </Text>
         </View>
       </View>
 
-      {subscriptionTier === 'free' ? (
+      {currentTier === 'free' ? (
         <TouchableOpacity
           style={styles.upgradeButton}
           onPress={() => setShowSubscriptionModal(true)}
@@ -243,15 +246,13 @@ export default function PremiumScreen() {
           {PREMIUM_FEATURES.map((feature) => renderFeatureCard(feature))}
         </View>
 
-        {/* Bottom spacer for floating tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
 
-      {/* Feature Modals */}
       <AdhanPlayer
         visible={activeModal === 'AdhanPlayer'}
         onClose={closeModal}
-        onSelectRecording={handleAdhanSelection}
+        onSelectAdhan={handleAdhanSelection}
       />
       <ARQiblaCompass
         visible={activeModal === 'ARQiblaCompass'}

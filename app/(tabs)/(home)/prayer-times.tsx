@@ -1,5 +1,11 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import QiblaCompass from '@/components/QiblaCompass';
+import NavigationHeader from '@/components/NavigationHeader';
+import QuoteDisplay from '@/components/QuoteDisplay';
+import PrayerTimeItem from '@/components/PrayerTimeItem';
+import * as Location from 'expo-location';
+import { PrayerCalculator, PrayerTimesData, PrayerTime } from '@/utils/prayerTimes';
+import { colors } from '@/styles/commonStyles';
 import {
   View,
   Text,
@@ -9,27 +15,72 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 import { Stack } from 'expo-router';
-import { colors } from '@/styles/commonStyles';
-import { PrayerCalculator, PrayerTimesData, PrayerTime } from '@/utils/prayerTimes';
-import PrayerTimeItem from '@/components/PrayerTimeItem';
-import QuoteDisplay from '@/components/QuoteDisplay';
-import QiblaCompass from '@/components/QiblaCompass';
-import NavigationHeader from '@/components/NavigationHeader';
+import React, { useState, useEffect, useCallback } from 'react';
+import * as Notifications from 'expo-notifications';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function PrayerTimesScreen() {
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimesData | null>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [refreshing, setRefreshing] = useState(false);
-  const [nextPrayer, setNextPrayer] = useState<string | null>(null);
-  const [showQibla, setShowQibla] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const initializeApp = useCallback(async () => {
+    try {
+      setLoading(true);
+      console.log('Initializing prayer times app...');
+
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Location Permission Required',
+          'This app needs your location to calculate accurate prayer times.',
+          [{ text: 'OK' }]
+        );
+        setLoading(false);
+        return;
+      }
+
+      console.log('Getting current location...');
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      setLocation(currentLocation);
+      console.log('Location obtained:', currentLocation.coords);
+
+      const times = PrayerCalculator.calculatePrayerTimes(
+        currentLocation.coords.latitude,
+        currentLocation.coords.longitude,
+        new Date()
+      );
+      setPrayerTimes(times);
+      console.log('Prayer times calculated:', times);
+
+      setLoading(false);
+    } catch (error) {
+      console.error('Error initializing app:', error);
+      Alert.alert('Error', 'Failed to get location. Please try again.');
+      setLoading(false);
+    }
+  }, []);
 
   const setupNotifications = useCallback(async () => {
     try {
+      if (Platform.OS === 'web') {
+        console.log('Notifications not supported on web');
+        return;
+      }
+
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
@@ -39,100 +90,40 @@ export default function PrayerTimesScreen() {
       }
 
       if (finalStatus !== 'granted') {
-        console.log('Notification permissions not granted');
+        console.log('Notification permission not granted');
         return;
       }
 
-      if (Platform.OS === 'android') {
-        await Notifications.setNotificationChannelAsync('prayer-times', {
-          name: 'Prayer Times',
-          importance: Notifications.AndroidImportance.MAX,
-          vibrationPattern: [0, 250, 250, 250],
-          lightColor: colors.primary,
-        });
-      }
-
-      Notifications.setNotificationHandler({
-        handleNotification: async () => ({
-          shouldShowAlert: true,
-          shouldPlaySound: true,
-          shouldSetBadge: false,
-        }),
-      });
-
-      console.log('Notifications setup complete');
+      console.log('Notification permissions granted');
     } catch (error) {
       console.error('Error setting up notifications:', error);
-    }
-  }, []);
-
-  const initializeApp = useCallback(async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert(
-          'Location Required',
-          'This app needs your location to calculate accurate prayer times.',
-          [{ text: 'OK' }]
-        );
-        return;
-      }
-
-      const locationData = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      setLocation(locationData);
-
-      const calculator = new PrayerCalculator(
-        locationData.coords.latitude,
-        locationData.coords.longitude
-      );
-      const times = calculator.getTodayPrayerTimes();
-      setPrayerTimes(times);
-
-      console.log('Prayer times initialized:', times);
-    } catch (error) {
-      console.error('Error initializing app:', error);
-      Alert.alert('Error', 'Failed to get your location. Please try again.');
     }
   }, []);
 
   useEffect(() => {
     initializeApp();
     setupNotifications();
-  }, [initializeApp, setupNotifications]);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    if (!prayerTimes) return;
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
 
-    const now = new Date();
-    const prayers: PrayerTime[] = [
-      prayerTimes.fajr,
-      prayerTimes.dhuhr,
-      prayerTimes.asr,
-      prayerTimes.maghrib,
-      prayerTimes.isha,
-    ];
+    return () => clearInterval(timer);
+  }, []);
 
-    let foundNext = false;
-    for (const prayer of prayers) {
-      if (prayer.time > now) {
-        setNextPrayer(prayer.name);
-        foundNext = true;
-        break;
-      }
-    }
-
-    if (!foundNext) {
-      setNextPrayer('fajr');
+  useEffect(() => {
+    if (prayerTimes && location) {
+      const now = new Date();
+      const prayers = PrayerCalculator.getPrayerTimesList(prayerTimes);
+      
+      prayers.forEach((prayer) => {
+        if (prayer.isNext && prayer.time > now) {
+          const timeUntil = prayer.time.getTime() - now.getTime();
+          console.log(`Next prayer: ${prayer.name} in ${Math.floor(timeUntil / 60000)} minutes`);
+        }
+      });
     }
   }, [prayerTimes, currentTime]);
 
@@ -147,6 +138,7 @@ export default function PrayerTimesScreen() {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
+      hour12: true,
     });
   };
 
@@ -157,77 +149,85 @@ export default function PrayerTimesScreen() {
 
   const isBeforeFirstPrayer = () => {
     if (!prayerTimes) return false;
-    return currentTime < prayerTimes.fajr.time;
+    const now = new Date();
+    return now < prayerTimes.fajr.time;
   };
 
   const isAfterLastPrayer = () => {
     if (!prayerTimes) return false;
-    return currentTime > prayerTimes.isha.time;
+    const now = new Date();
+    return now > prayerTimes.isha.time;
   };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading prayer times...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <Stack.Screen options={{ headerShown: false }} />
       
-      <NavigationHeader
-        title="Prayer Times"
-        showBack={false}
-        showClose={false}
-      />
+      <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
         }
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        <View style={styles.clockContainer}>
           <Text style={styles.currentTime}>{formatCurrentTime()}</Text>
-          <Text style={styles.location}>{getLocationString()}</Text>
+          <Text style={styles.locationText}>{getLocationString()}</Text>
         </View>
 
-        {(isBeforeFirstPrayer() || isAfterLastPrayer()) && (
-          <QuoteDisplay />
+        {isBeforeFirstPrayer() && (
+          <QuoteDisplay timing="before" />
         )}
 
         {prayerTimes && (
           <View style={styles.prayerTimesContainer}>
-            <PrayerTimeItem
-              prayer={prayerTimes.fajr}
-              isNext={nextPrayer === 'fajr'}
-            />
-            <PrayerTimeItem
-              prayer={prayerTimes.dhuhr}
-              isNext={nextPrayer === 'dhuhr'}
-            />
-            <PrayerTimeItem
-              prayer={prayerTimes.asr}
-              isNext={nextPrayer === 'asr'}
-            />
-            <PrayerTimeItem
-              prayer={prayerTimes.maghrib}
-              isNext={nextPrayer === 'maghrib'}
-            />
-            <PrayerTimeItem
-              prayer={prayerTimes.isha}
-              isNext={nextPrayer === 'isha'}
+            {PrayerCalculator.getPrayerTimesList(prayerTimes).map((prayer) => (
+              <PrayerTimeItem
+                key={prayer.name}
+                name={prayer.name}
+                arabicName={prayer.arabicName}
+                time={prayer.time}
+                isNext={prayer.isNext}
+              />
+            ))}
+          </View>
+        )}
+
+        {isAfterLastPrayer() && (
+          <QuoteDisplay timing="after" />
+        )}
+
+        {location && (
+          <View style={styles.qiblaContainer}>
+            <QiblaCompass
+              latitude={location.coords.latitude}
+              longitude={location.coords.longitude}
             />
           </View>
         )}
 
-        {/* Add bottom padding to prevent content from being hidden by floating tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
-
-      {location && (
-        <QiblaCompass
-          visible={showQibla}
-          onClose={() => setShowQibla(false)}
-          latitude={location.coords.latitude}
-          longitude={location.coords.longitude}
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -244,24 +244,44 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  header: {
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    fontSize: 18,
+    color: colors.text,
+    fontWeight: '600',
+  },
+  clockContainer: {
     alignItems: 'center',
     marginBottom: 24,
+    padding: 20,
+    backgroundColor: colors.card,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    boxShadow: `0 4px 8px ${colors.shadow}`,
+    elevation: 3,
   },
   currentTime: {
-    fontSize: 36,
+    fontSize: 48,
     fontWeight: 'bold',
-    color: colors.text,
+    color: colors.primary,
     marginBottom: 8,
   },
-  location: {
+  locationText: {
     fontSize: 14,
     color: colors.textSecondary,
   },
   prayerTimesContainer: {
-    marginTop: 16,
+    marginBottom: 24,
+  },
+  qiblaContainer: {
+    marginBottom: 24,
   },
   bottomSpacer: {
-    height: 120, // Space for floating tab bar
+    height: 120,
   },
 });

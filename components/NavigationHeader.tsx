@@ -4,7 +4,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native
 import { useRouter } from 'expo-router';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface NavigationHeaderProps {
   title?: string;
@@ -17,8 +16,8 @@ interface NavigationHeaderProps {
 
 export default function NavigationHeader({
   title,
-  showBack = true,
-  showClose = false,
+  showBack = false,
+  showClose = true,
   onBackPress,
   onClosePress,
   rightComponent,
@@ -42,48 +41,40 @@ export default function NavigationHeader({
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.leftSection}>
-          {showBack && (
-            <TouchableOpacity
-              onPress={handleBackPress}
-              style={styles.button}
-              activeOpacity={0.7}
-            >
-              <IconSymbol name="chevron-left" size={24} color={colors.primary} />
-              <Text style={styles.buttonText}>Back</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.centerSection}>
-          {title && <Text style={styles.title}>{title}</Text>}
-        </View>
-
-        <View style={styles.rightSection}>
-          {showClose && (
-            <TouchableOpacity
-              onPress={handleClosePress}
-              style={styles.closeButton}
-              activeOpacity={0.7}
-            >
-              <IconSymbol name="close" size={24} color={colors.primary} />
-            </TouchableOpacity>
-          )}
-          {rightComponent}
-        </View>
+    <View style={styles.container}>
+      <View style={styles.leftSection}>
+        {showBack && (
+          <TouchableOpacity
+            onPress={handleBackPress}
+            style={styles.button}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="chevron.left" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        )}
       </View>
-    </SafeAreaView>
+
+      <View style={styles.centerSection}>
+        {title && <Text style={styles.title}>{title}</Text>}
+      </View>
+
+      <View style={styles.rightSection}>
+        {rightComponent}
+        {showClose && (
+          <TouchableOpacity
+            onPress={handleClosePress}
+            style={styles.closeButton}
+            activeOpacity={0.7}
+          >
+            <IconSymbol name="xmark" size={24} color={colors.primary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -91,6 +82,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     minHeight: 56,
+    backgroundColor: colors.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   leftSection: {
     flex: 1,
@@ -103,24 +97,18 @@ const styles = StyleSheet.create({
   rightSection: {
     flex: 1,
     alignItems: 'flex-end',
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
   },
   button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    padding: 8,
     backgroundColor: colors.card,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
     boxShadow: `0 2px 4px ${colors.shadow}`,
     elevation: 2,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
-    marginLeft: 4,
   },
   closeButton: {
     padding: 8,

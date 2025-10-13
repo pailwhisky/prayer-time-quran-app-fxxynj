@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { askIslamicQuestion } from '@/utils/geminiService';
+import NavigationHeader from '@/components/NavigationHeader';
 
 interface Message {
   id: string;
@@ -78,7 +79,7 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
     setIsLoading(true);
 
     try {
-      // Get AI response
+      // Get AI response using GOOGLE_AI_API_KEY
       const response = await askIslamicQuestion(messageText);
 
       if (response) {
@@ -156,20 +157,11 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <View style={styles.botAvatar}>
-              <IconSymbol name="sparkles" size={20} color="#FFFFFF" />
-            </View>
-            <View>
-              <Text style={styles.headerTitle}>Islamic Assistant</Text>
-              <Text style={styles.headerSubtitle}>AI-Powered Guidance</Text>
-            </View>
-          </View>
-          <TouchableOpacity onPress={onClose}>
-            <IconSymbol name="xmark" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <NavigationHeader
+          title="Islamic Assistant"
+          showClose={true}
+          onClosePress={onClose}
+        />
 
         <KeyboardAvoidingView
           style={styles.content}
@@ -247,38 +239,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  botAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: colors.textSecondary,
   },
   content: {
     flex: 1,

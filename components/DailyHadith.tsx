@@ -15,6 +15,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { generateDailyHadith } from '@/utils/geminiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NavigationHeader from '@/components/NavigationHeader';
 
 interface DailyHadithProps {
   visible: boolean;
@@ -106,15 +107,16 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onClose}>
-            <IconSymbol name="xmark" size={24} color={colors.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Daily Hadith</Text>
-          <TouchableOpacity onPress={handleRefresh}>
-            <IconSymbol name="arrow.clockwise" size={24} color={colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <NavigationHeader
+          title="Daily Hadith"
+          showClose={true}
+          onClosePress={onClose}
+          rightComponent={
+            <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
+              <IconSymbol name="arrow.clockwise" size={20} color={colors.primary} />
+            </TouchableOpacity>
+          }
+        />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {loading ? (
@@ -207,20 +209,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.card,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
+  refreshButton: {
+    padding: 8,
   },
   content: {
     flex: 1,

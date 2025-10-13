@@ -11,10 +11,12 @@ import {
   Alert,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NavigationHeader from '@/components/NavigationHeader';
 
 interface NotificationSettings {
   enabled: boolean;
@@ -270,7 +272,7 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
           <Text style={styles.soundButtonText}>
             {availableSounds.find(s => s.id === settings.sounds[prayer])?.name || 'Default'}
           </Text>
-          <IconSymbol name="chevron-right" size={16} color={colors.textSecondary} />
+          <IconSymbol name="chevron.right" size={16} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
     </View>
@@ -283,15 +285,12 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
       presentationStyle="pageSheet"
       onRequestClose={() => setShowSoundPicker(null)}
     >
-      <View style={styles.soundPickerContainer}>
-        <View style={styles.soundPickerHeader}>
-          <Text style={styles.soundPickerTitle}>
-            Select Sound for {showSoundPicker ? prayerNames[showSoundPicker as keyof typeof prayerNames].english : ''}
-          </Text>
-          <TouchableOpacity onPress={() => setShowSoundPicker(null)}>
-            <IconSymbol name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView style={styles.soundPickerContainer}>
+        <NavigationHeader
+          title={`Select Sound for ${showSoundPicker ? prayerNames[showSoundPicker as keyof typeof prayerNames].english : ''}`}
+          showClose={true}
+          onClosePress={() => setShowSoundPicker(null)}
+        />
 
         <ScrollView style={styles.soundList}>
           {availableSounds.map((sound) => (
@@ -308,12 +307,12 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
                 <Text style={styles.soundDescription}>{sound.description}</Text>
               </View>
               {settings.sounds[showSoundPicker as keyof typeof prayerNames] === sound.id && (
-                <IconSymbol name="check" size={20} color={colors.primary} />
+                <IconSymbol name="checkmark" size={20} color={colors.primary} />
               )}
             </TouchableOpacity>
           ))}
         </ScrollView>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 
@@ -324,13 +323,12 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
       presentationStyle="pageSheet"
       onRequestClose={onClose}
     >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Advanced Notifications</Text>
-          <TouchableOpacity onPress={onClose}>
-            <IconSymbol name="close" size={24} color={colors.text} />
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView style={styles.container}>
+        <NavigationHeader
+          title="Advanced Notifications"
+          showClose={true}
+          onClosePress={onClose}
+        />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Global Settings */}
@@ -415,14 +413,16 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
                 Alert.alert('Test Sent', 'A test notification will appear shortly');
               }}
             >
-              <IconSymbol name="notifications" size={20} color={colors.card} />
+              <IconSymbol name="bell" size={20} color={colors.card} />
               <Text style={styles.testButtonText}>Send Test Notification</Text>
             </TouchableOpacity>
           </View>
+
+          <View style={{ height: 40 }} />
         </ScrollView>
 
         {renderSoundPicker()}
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }
@@ -431,20 +431,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
   },
   content: {
     flex: 1,
@@ -581,21 +567,6 @@ const styles = StyleSheet.create({
   soundPickerContainer: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  soundPickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 60,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  soundPickerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.text,
-    flex: 1,
   },
   soundList: {
     flex: 1,

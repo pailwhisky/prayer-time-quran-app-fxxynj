@@ -16,6 +16,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NavigationHeader from '@/components/NavigationHeader';
 
 interface CharityOrganization {
   id: string;
@@ -268,40 +269,40 @@ export default function SadaqahDonation({ visible, onClose }: SadaqahDonationPro
 
   const renderDonationHistory = () => (
     <View style={styles.historyContainer}>
-      <View style={styles.historyHeader}>
-        <TouchableOpacity onPress={() => setShowHistory(false)}>
-          <IconSymbol name="arrow.left" size={24} color={colors.primary} />
-        </TouchableOpacity>
-        <Text style={styles.historyTitle}>Donation History</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <NavigationHeader
+        title="Donation History"
+        showClose={true}
+        onClosePress={() => setShowHistory(false)}
+      />
 
-      <View style={styles.totalCard}>
-        <Text style={styles.totalLabel}>Total Sadaqah Given</Text>
-        <Text style={styles.totalAmount}>${totalDonated.toFixed(2)}</Text>
-        <Text style={styles.totalVerse}>
-          "Never will you attain righteousness until you spend from that which you love." (Quran 3:92)
-        </Text>
-      </View>
+      <ScrollView style={styles.historyContent}>
+        <View style={styles.totalCard}>
+          <Text style={styles.totalLabel}>Total Sadaqah Given</Text>
+          <Text style={styles.totalAmount}>${totalDonated.toFixed(2)}</Text>
+          <Text style={styles.totalVerse}>
+            "Never will you attain righteousness until you spend from that which you love." (Quran 3:92)
+          </Text>
+        </View>
 
-      <ScrollView style={styles.historyList} showsVerticalScrollIndicator={false}>
-        {donationHistory.length === 0 ? (
-          <View style={styles.emptyState}>
-            <IconSymbol name="heart" size={48} color={colors.textSecondary} />
-            <Text style={styles.emptyText}>No donations recorded yet</Text>
-          </View>
-        ) : (
-          donationHistory.map((record, index) => (
-            <View key={index} style={styles.historyItem}>
-              <View style={styles.historyItemLeft}>
-                <Text style={styles.historyCharity}>{record.charity_name}</Text>
-                <Text style={styles.historyDate}>{new Date(record.date).toLocaleDateString()}</Text>
-                {record.notes && <Text style={styles.historyNotes}>{record.notes}</Text>}
-              </View>
-              <Text style={styles.historyAmount}>${record.amount.toFixed(2)}</Text>
+        <View style={styles.historyList}>
+          {donationHistory.length === 0 ? (
+            <View style={styles.emptyState}>
+              <IconSymbol name="heart" size={48} color={colors.textSecondary} />
+              <Text style={styles.emptyText}>No donations recorded yet</Text>
             </View>
-          ))
-        )}
+          ) : (
+            donationHistory.map((record, index) => (
+              <View key={index} style={styles.historyItem}>
+                <View style={styles.historyItemLeft}>
+                  <Text style={styles.historyCharity}>{record.charity_name}</Text>
+                  <Text style={styles.historyDate}>{new Date(record.date).toLocaleDateString()}</Text>
+                  {record.notes && <Text style={styles.historyNotes}>{record.notes}</Text>}
+                </View>
+                <Text style={styles.historyAmount}>${record.amount.toFixed(2)}</Text>
+              </View>
+            ))
+          )}
+        </View>
       </ScrollView>
     </View>
   );
@@ -313,15 +314,16 @@ export default function SadaqahDonation({ visible, onClose }: SadaqahDonationPro
           renderDonationHistory()
         ) : (
           <>
-            <View style={styles.header}>
-              <TouchableOpacity onPress={onClose}>
-                <IconSymbol name="xmark" size={24} color={colors.primary} />
-              </TouchableOpacity>
-              <Text style={styles.title}>Sadaqah</Text>
-              <TouchableOpacity onPress={() => setShowHistory(true)}>
-                <IconSymbol name="clock" size={24} color={colors.primary} />
-              </TouchableOpacity>
-            </View>
+            <NavigationHeader
+              title="Sadaqah & Charity"
+              showClose={true}
+              onClosePress={onClose}
+              rightComponent={
+                <TouchableOpacity onPress={() => setShowHistory(true)} style={styles.historyButton}>
+                  <IconSymbol name="clock" size={20} color={colors.primary} />
+                </TouchableOpacity>
+              }
+            />
 
             <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
               <View style={styles.infoCard}>
@@ -405,19 +407,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.text,
+  historyButton: {
+    padding: 8,
   },
   content: {
     flex: 1,
@@ -619,25 +610,15 @@ const styles = StyleSheet.create({
   historyContainer: {
     flex: 1,
   },
-  historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  historyContent: {
+    flex: 1,
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  historyTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: colors.text,
   },
   totalCard: {
     backgroundColor: colors.primary,
     borderRadius: 16,
     padding: 24,
-    margin: 20,
+    marginVertical: 20,
     alignItems: 'center',
     boxShadow: `0px 6px 16px ${colors.shadow}`,
     elevation: 5,
@@ -661,8 +642,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   historyList: {
-    flex: 1,
-    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   historyItem: {
     backgroundColor: colors.card,

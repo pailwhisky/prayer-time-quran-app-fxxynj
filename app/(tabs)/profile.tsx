@@ -17,11 +17,13 @@ import { IconSymbol } from '@/components/IconSymbol';
 import IslamicChatbot from '@/components/IslamicChatbot';
 import SadaqahDonation from '@/components/SadaqahDonation';
 import NavigationHeader from '@/components/NavigationHeader';
+import GeminiSetup from '@/components/GeminiSetup';
 
 export default function ProfileScreen() {
   const [showHadith, setShowHadith] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
   const [showSadaqah, setShowSadaqah] = useState(false);
+  const [showGeminiSetup, setShowGeminiSetup] = useState(false);
 
   const handleNotificationSettings = () => {
     Alert.alert('Notification Settings', 'Configure your prayer time notifications here.');
@@ -107,6 +109,26 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>AI Configuration</Text>
+
+          <Pressable
+            style={[styles.menuItem, styles.geminiMenuItem]}
+            onPress={() => setShowGeminiSetup(true)}
+          >
+            <View style={[styles.menuIconContainer, styles.geminiIconContainer]}>
+              <IconSymbol name="sparkles" size={24} color="#FFFFFF" />
+            </View>
+            <View style={styles.menuContent}>
+              <Text style={styles.menuTitle}>Gemini AI Setup</Text>
+              <Text style={styles.menuDescription}>
+                Configure your Google AI API key for enhanced features
+              </Text>
+            </View>
+            <IconSymbol name="chevron-right" size={24} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
 
           <Pressable
@@ -163,6 +185,7 @@ export default function ProfileScreen() {
       <DailyHadith visible={showHadith} onClose={() => setShowHadith(false)} />
       <IslamicChatbot visible={showChatbot} onClose={() => setShowChatbot(false)} />
       <SadaqahDonation visible={showSadaqah} onClose={() => setShowSadaqah(false)} />
+      <GeminiSetup visible={showGeminiSetup} onClose={() => setShowGeminiSetup(false)} />
     </SafeAreaView>
   );
 }
@@ -200,6 +223,11 @@ const styles = StyleSheet.create({
     boxShadow: `0 2px 4px ${colors.shadow}`,
     elevation: 2,
   },
+  geminiMenuItem: {
+    borderWidth: 2,
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(212, 163, 115, 0.05)',
+  },
   menuIconContainer: {
     width: 48,
     height: 48,
@@ -208,6 +236,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+  },
+  geminiIconContainer: {
+    backgroundColor: colors.accent,
   },
   menuContent: {
     flex: 1,

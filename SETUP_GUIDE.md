@@ -46,10 +46,14 @@ EXPO_PUBLIC_GOOGLE_AI_API_KEY=your_google_ai_api_key_here
 ```
 
 **Getting a Google AI API Key:**
-1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+1. Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
 2. Sign in with your Google account
 3. Click "Create API Key"
 4. Copy the key and paste it in your `.env` file
+
+**Note:** The API is **FREE** with generous quotas (60 requests/min, 1,500/day). No credit card required!
+
+For detailed Gemini AI setup instructions, see [GEMINI_INTEGRATION_GUIDE.md](./GEMINI_INTEGRATION_GUIDE.md)
 
 ### 4. Configure Supabase
 
@@ -90,6 +94,53 @@ npm run android
 ```bash
 npm run web
 ```
+
+## 🤖 Gemini AI Integration
+
+This app uses **Google's Gemini AI** to provide enhanced Islamic content. The integration includes:
+
+### AI-Powered Features
+
+1. **Enhanced Quran Quotes**
+   - Historical context for verses
+   - Modern-day reflections
+   - Deeper spiritual insights
+
+2. **Islamic Q&A Chatbot**
+   - Ask questions about Islam
+   - Get answers with references
+   - Based on Quran and Hadith
+
+3. **Daily Hadith**
+   - Authentic Hadith with AI explanations
+   - Practical applications
+   - Daily spiritual inspiration
+
+4. **Spiritual Guidance**
+   - Personalized duas
+   - Prayer reflections
+   - Compassionate advice
+
+### Testing AI Features
+
+After setting up your API key:
+
+1. Open the app
+2. Go to **Profile & Settings** tab
+3. Tap **"Gemini AI Setup"**
+4. Tap **"Test API Connection"**
+5. You should see a success message ✅
+
+### Troubleshooting AI Features
+
+If AI features aren't working:
+
+- Verify `EXPO_PUBLIC_GOOGLE_AI_API_KEY` is set in `.env`
+- Restart the app after adding the key
+- Check console logs for error messages
+- Use the built-in test feature in the app
+
+For complete Gemini AI documentation, see [GEMINI_INTEGRATION_GUIDE.md](./GEMINI_INTEGRATION_GUIDE.md)
 
 ## 🔧 Configuration
 
@@ -166,6 +217,12 @@ All tables have RLS (Row Level Security) enabled.
 - User data is protected by authentication
 - API keys are properly secured
 
+### Gemini AI Security
+- API key stored locally on device
+- Direct communication with Google servers
+- No data logged by the app
+- Real-time AI responses
+
 ## 🧪 Testing
 
 ### Manual Testing Checklist
@@ -188,13 +245,20 @@ All tables have RLS (Row Level Security) enabled.
    - [ ] Search works
    - [ ] Arabic text displays properly
 
-4. **Notifications**
+4. **AI Features**
+   - [ ] API key configured
+   - [ ] Enhanced quotes load
+   - [ ] Chatbot responds
+   - [ ] Daily Hadith generates
+   - [ ] Test connection works
+
+5. **Notifications**
    - [ ] Permission requested
    - [ ] Notifications scheduled
    - [ ] Notifications fire at correct times
    - [ ] Notification sound plays
 
-5. **Premium Features**
+6. **Premium Features**
    - [ ] Subscription modal shows
    - [ ] Feature gating works
    - [ ] Upgrade flow works
@@ -247,7 +311,9 @@ The build output will be in the `dist` folder.
 **Issue: "Gemini AI not working"**
 - Solution: Check that `EXPO_PUBLIC_GOOGLE_AI_API_KEY` is set in `.env`
 - Verify the API key is valid
-- Check console for error messages
+- Restart the app after adding the key
+- Use the "Test API Connection" feature in Profile & Settings
+- Check console for error messages (look for 🤖 emoji logs)
 
 **Issue: "Location not detected"**
 - Solution: Ensure location permissions are granted
@@ -273,8 +339,10 @@ The build output will be in the `dist` folder.
 
 - Check the console logs for error messages
 - Review the `DISTRIBUTION_CHECKLIST.md` for known issues
+- Check `GEMINI_INTEGRATION_GUIDE.md` for AI-specific issues
 - Check Expo documentation: https://docs.expo.dev
 - Check Supabase documentation: https://supabase.com/docs
+- Check Google AI documentation: https://ai.google.dev/docs
 
 ## 📚 Additional Resources
 
@@ -282,6 +350,7 @@ The build output will be in the `dist` folder.
 - [React Native Documentation](https://reactnative.dev)
 - [Supabase Documentation](https://supabase.com/docs)
 - [Google AI Documentation](https://ai.google.dev/docs)
+- [Gemini API Setup](https://ai.google.dev/tutorials/setup)
 - [React Navigation](https://reactnavigation.org)
 
 ## 🔄 Updates and Maintenance
@@ -308,10 +377,11 @@ npx expo install --fix
 
 1. Create a new branch for features
 2. Make changes and test thoroughly
-3. Commit with descriptive messages
-4. Push to repository
-5. Create pull request
-6. Review and merge
+3. Test AI features if modified
+4. Commit with descriptive messages
+5. Push to repository
+6. Create pull request
+7. Review and merge
 
 ## 🎨 Customization
 
@@ -341,21 +411,24 @@ export const colors = {
 3. Update navigation if needed
 4. Add to premium features if applicable
 5. Update database schema if needed
+6. Add AI integration if applicable
 
 ## 🚀 Deployment Checklist
 
 Before deploying to production:
 
 - [ ] All features tested
+- [ ] AI features working (test with API key)
 - [ ] No console errors
 - [ ] Environment variables configured
 - [ ] App icons and splash screen set
-- [ ] Privacy policy created
+- [ ] Privacy policy created (mention AI usage)
 - [ ] Terms of service created
 - [ ] App store assets prepared
 - [ ] Version number updated
 - [ ] Build successful
 - [ ] Beta testing completed
+- [ ] API key instructions in app store description
 
 ## 📞 Support
 
@@ -363,6 +436,20 @@ For issues or questions:
 - Create an issue in the repository
 - Contact the development team
 - Check the documentation
+- Review the Gemini Integration Guide
+
+## 🔑 Important Notes
+
+### API Keys
+- Keep your `.env` file secure
+- Never share API keys publicly
+- Regenerate keys if compromised
+- Monitor API usage in Google AI Studio
+
+### AI Content Disclaimer
+- AI responses are for guidance only
+- Always verify important religious matters with scholars
+- AI should complement, not replace, traditional Islamic learning
 
 ---
 

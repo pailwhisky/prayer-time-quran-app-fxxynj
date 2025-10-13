@@ -6,6 +6,7 @@ import { colors } from '@/styles/commonStyles';
 import { QuranQuote, fetchQuote, getQuoteForTime } from '@/utils/quranQuotes';
 import { generateEnhancedQuranQuote } from '@/utils/geminiService';
 import { IconSymbol } from '@/components/IconSymbol';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface QuoteDisplayProps {
   timing?: 'before' | 'after' | 'general';
@@ -17,9 +18,11 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
   const [loading, setLoading] = useState(true);
   const [showEnhanced, setShowEnhanced] = useState(false);
   const [loadingEnhanced, setLoadingEnhanced] = useState(false);
+  const { hasFeature, currentTier } = useSubscription();
 
   const isBeforeFirstPrayer = timing === 'before';
   const isAfterLastPrayer = timing === 'after';
+  const canUseAI = hasFeature('daily_quotes');
 
   const loadQuote = useCallback(async () => {
     try {
@@ -121,20 +124,29 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
               </View>
             )}
 
-            <TouchableOpacity 
-              style={styles.enhanceButton}
-              onPress={loadEnhancedQuote}
-              disabled={loadingEnhanced}
-            >
-              {loadingEnhanced ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <>
-                  <IconSymbol name="sparkles" size={18} color={colors.primary} />
-                  <Text style={styles.enhanceButtonText}>Get AI Insights</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            {canUseAI ? (
+              <TouchableOpacity 
+                style={styles.enhanceButton}
+                onPress={loadEnhancedQuote}
+                disabled={loadingEnhanced}
+              >
+                {loadingEnhanced ? (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                ) : (
+                  <>
+                    <IconSymbol name="sparkles" size={18} color={colors.primary} />
+                    <Text style={styles.enhanceButtonText}>Get AI Insights</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.premiumPrompt}>
+                <IconSymbol name="lock.fill" size={16} color={colors.textSecondary} />
+                <Text style={styles.premiumPromptText}>
+                  AI insights available with Premium subscription
+                </Text>
+              </View>
+            )}
           </>
         )}
       </View>
@@ -268,5 +280,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     textDecorationLine: 'underline',
+  },
+  premiumPrompt: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  premiumPromptText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
   },
 });

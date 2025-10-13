@@ -16,6 +16,7 @@ import { colors } from '@/styles/commonStyles';
 import { generateDailyHadith } from '@/utils/geminiService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NavigationHeader from '@/components/NavigationHeader';
+import PremiumGate from '@/components/PremiumGate';
 
 interface DailyHadithProps {
   visible: boolean;
@@ -118,6 +119,12 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
           }
         />
 
+        <PremiumGate
+          featureKey="daily_hadith"
+          featureName="AI-Generated Daily Hadith"
+          requiredTier="premium"
+        >
+
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {loading ? (
             <View style={styles.loadingContainer}>
@@ -199,6 +206,7 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
             </>
           ) : null}
         </ScrollView>
+        </PremiumGate>
       </SafeAreaView>
     </Modal>
   );

@@ -17,6 +17,7 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { colors } from '@/styles/commonStyles';
 import { askIslamicQuestion } from '@/utils/geminiService';
 import NavigationHeader from '@/components/NavigationHeader';
+import PremiumGate from '@/components/PremiumGate';
 
 interface Message {
   id: string;
@@ -163,6 +164,12 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
           onClosePress={onClose}
         />
 
+        <PremiumGate
+          featureKey="ai_chatbot"
+          featureName="AI Islamic Assistant"
+          requiredTier="ultra"
+        >
+
         <KeyboardAvoidingView
           style={styles.content}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -230,6 +237,7 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
             </Text>
           </View>
         </KeyboardAvoidingView>
+        </PremiumGate>
       </SafeAreaView>
     </Modal>
   );

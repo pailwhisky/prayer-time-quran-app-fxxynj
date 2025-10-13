@@ -28,7 +28,6 @@ export default function ProfileScreen() {
   const [showHadith, setShowHadith] = useState(false);
   const [showChatbot, setShowChatbot] = useState(false);
   const [showSadaqah, setShowSadaqah] = useState(false);
-  const [showGeminiSetup, setShowGeminiSetup] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackText, setFeedbackText] = useState('');
@@ -40,7 +39,7 @@ export default function ProfileScreen() {
   const handleAbout = () => {
     Alert.alert(
       'About Prayer Times App',
-      'Version 1.0.0\n\nA comprehensive Islamic app for prayer times, Quran reading, and spiritual growth.\n\nPowered by Google Gemini AI for enhanced Islamic content.\n\nDeveloped with ❤️ for the Muslim community.',
+      'Version 1.0.0\n\nA comprehensive Islamic app for prayer times, Quran reading, and spiritual growth.\n\nPremium AI features powered by advanced language models provide personalized Islamic guidance and content.\n\nDeveloped with ❤️ for the Muslim community.',
       [{ text: 'OK' }]
     );
   };
@@ -148,7 +147,13 @@ export default function ProfileScreen() {
               <IconSymbol name="book.closed" size={24} color={colors.primary} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Daily Hadith</Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.menuTitle}>Daily Hadith</Text>
+                <View style={styles.premiumBadge}>
+                  <IconSymbol name="star.fill" size={12} color={colors.accent} />
+                  <Text style={styles.premiumBadgeText}>Premium</Text>
+                </View>
+              </View>
               <Text style={styles.menuDescription}>
                 Read authentic Hadith with AI-powered explanations
               </Text>
@@ -164,9 +169,15 @@ export default function ProfileScreen() {
               <IconSymbol name="message" size={24} color={colors.accent} />
             </View>
             <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Islamic AI Assistant</Text>
+              <View style={styles.titleRow}>
+                <Text style={styles.menuTitle}>Islamic AI Assistant</Text>
+                <View style={[styles.premiumBadge, styles.ultraBadge]}>
+                  <IconSymbol name="star.fill" size={12} color="#FFFFFF" />
+                  <Text style={[styles.premiumBadgeText, styles.ultraBadgeText]}>Ultra</Text>
+                </View>
+              </View>
               <Text style={styles.menuDescription}>
-                Ask questions about Islam with Gemini AI
+                Ask questions about Islam with AI-powered guidance
               </Text>
             </View>
             <IconSymbol name="chevron.right" size={24} color={colors.textSecondary} />
@@ -189,25 +200,7 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>AI Configuration</Text>
 
-          <Pressable
-            style={[styles.menuItem, styles.geminiMenuItem]}
-            onPress={() => setShowGeminiSetup(true)}
-          >
-            <View style={[styles.menuIconContainer, styles.geminiIconContainer]}>
-              <IconSymbol name="sparkles" size={24} color="#FFFFFF" />
-            </View>
-            <View style={styles.menuContent}>
-              <Text style={styles.menuTitle}>Gemini AI Setup</Text>
-              <Text style={styles.menuDescription}>
-                Configure your Google AI API key for enhanced features
-              </Text>
-            </View>
-            <IconSymbol name="chevron.right" size={24} color={colors.textSecondary} />
-          </Pressable>
-        </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Settings</Text>
@@ -266,7 +259,6 @@ export default function ProfileScreen() {
       <DailyHadith visible={showHadith} onClose={() => setShowHadith(false)} />
       <IslamicChatbot visible={showChatbot} onClose={() => setShowChatbot(false)} />
       <SadaqahDonation visible={showSadaqah} onClose={() => setShowSadaqah(false)} />
-      <GeminiSetup visible={showGeminiSetup} onClose={() => setShowGeminiSetup(false)} />
       <AdvancedNotifications visible={showNotifications} onClose={() => setShowNotifications(false)} />
       {renderFeedbackModal()}
     </SafeAreaView>
@@ -306,11 +298,6 @@ const styles = StyleSheet.create({
     boxShadow: `0 2px 4px ${colors.shadow}`,
     elevation: 2,
   },
-  geminiMenuItem: {
-    borderWidth: 2,
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(212, 163, 115, 0.05)',
-  },
   menuIconContainer: {
     width: 48,
     height: 48,
@@ -320,22 +307,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
-  geminiIconContainer: {
-    backgroundColor: colors.accent,
-  },
   menuContent: {
     flex: 1,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
   menuTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginBottom: 4,
   },
   menuDescription: {
     fontSize: 14,
     color: colors.textSecondary,
     lineHeight: 18,
+  },
+  premiumBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(212, 163, 115, 0.15)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.accent,
+  },
+  premiumBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.accent,
+    textTransform: 'uppercase',
+  },
+  ultraBadge: {
+    backgroundColor: colors.highlight,
+    borderColor: colors.highlight,
+  },
+  ultraBadgeText: {
+    color: '#FFFFFF',
   },
   bottomSpacer: {
     height: 120,

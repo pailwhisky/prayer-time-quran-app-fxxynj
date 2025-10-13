@@ -38,29 +38,6 @@ export default function PrayerTimesScreen() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState(false);
 
-  // Request notification permissions
-  const requestNotificationPermissions = useCallback(async () => {
-    try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      
-      if (finalStatus === 'granted') {
-        console.log('✅ Notification permissions granted');
-        setNotificationPermission(true);
-      } else {
-        console.log('⚠️ Notification permissions denied');
-        setNotificationPermission(false);
-      }
-    } catch (error) {
-      console.error('Error requesting notification permissions:', error);
-    }
-  }, []);
-
   // Schedule notifications for prayer times
   const schedulePrayerNotifications = useCallback(async (times: PrayerTimesData) => {
     try {
@@ -89,6 +66,29 @@ export default function PrayerTimesScreen() {
       }
     } catch (error) {
       console.error('Error scheduling notifications:', error);
+    }
+  }, []);
+
+  // Request notification permissions
+  const requestNotificationPermissions = useCallback(async () => {
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      
+      if (finalStatus === 'granted') {
+        console.log('✅ Notification permissions granted');
+        setNotificationPermission(true);
+      } else {
+        console.log('⚠️ Notification permissions denied');
+        setNotificationPermission(false);
+      }
+    } catch (error) {
+      console.error('Error requesting notification permissions:', error);
     }
   }, []);
 
@@ -151,7 +151,7 @@ export default function PrayerTimesScreen() {
   useEffect(() => {
     requestNotificationPermissions();
     requestLocationAndLoadPrayerTimes();
-  }, [requestNotificationPermissions, requestLocationAndLoadPrayerTimes]);
+  }, []);
 
   // Update current time every minute
   useEffect(() => {
@@ -171,7 +171,7 @@ export default function PrayerTimesScreen() {
       );
       setPrayerTimes(updatedTimes);
     }
-  }, [currentTime, location, prayerTimes]);
+  }, [currentTime]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

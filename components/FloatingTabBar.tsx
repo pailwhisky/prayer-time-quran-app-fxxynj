@@ -76,7 +76,7 @@ export default function FloatingTabBar({
       stiffness: 120,
       mass: 1,
     });
-  }, [activeTabIndex, animatedValue]);
+  }, [activeTabIndex]);
 
   const handleTabPress = (route: string) => {
     router.push(route);

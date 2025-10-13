@@ -51,6 +51,10 @@ export default function MosqueFinder({ visible, onClose }: MosqueFinderProps) {
   const [loading, setLoading] = useState(true);
   const [locationPermission, setLocationPermission] = useState(false);
 
+  const toRadians = (degrees: number): number => {
+    return degrees * (Math.PI / 180);
+  };
+
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const R = 6371; // Radius of the Earth in kilometers
     const dLat = toRadians(lat2 - lat1);
@@ -62,10 +66,6 @@ export default function MosqueFinder({ visible, onClose }: MosqueFinderProps) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }, []);
-
-  const toRadians = (degrees: number): number => {
-    return degrees * (Math.PI / 180);
-  };
 
   const requestLocationPermission = useCallback(async () => {
     try {

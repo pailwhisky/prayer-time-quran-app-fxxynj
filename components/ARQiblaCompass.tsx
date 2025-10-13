@@ -13,9 +13,9 @@ import {
   Modal,
   Alert,
   Dimensions,
-  Platform,
+  ActivityIndicator,
 } from 'react-native';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -35,30 +35,148 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
   const [deviceHeading, setDeviceHeading] = useState(0);
   const [qiblaDirection, setQiblaDirection] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [magnetometerAvailable, setMagnetometerAvailable] = useState<boolean | null>(null);
 
   const qiblaRotation = useSharedValue(0);
   const compassRotation = useSharedValue(0);
+  
+  const subscriptionRef = useRef<any>(null);
+  const isMountedRef = useRef(true);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 3;
 
+  // Cleanup magnetometer subscription
+  const cleanupMagnetometer = useCallback(() => {
+    if (subscriptionRef.current) {
+      try {
+        console.log('Cleaning up AR magnetometer subscription...');
+        subscriptionRef.current.remove();
+        subscriptionRef.current = null;
+        console.log('AR magnetometer subscription removed successfully');
+      } catch (err) {
+        console.error('Error removing AR magnetometer subscription:', err);
+      }
+    }
+  }, []);
+
+  // Setup magnetometer subscription
+  const setupMagnetometer = useCallback(async () => {
+    if (!isMountedRef.current) {
+      console.log('Component unmounted, skipping magnetometer setup');
+      return false;
+    }
+
+    try {
+      console.log('Setting up AR magnetometer subscription...');
+      
+      // Check if magnetometer is available
+      const isAvailable = await Magnetometer.isAvailableAsync();
+      console.log('AR Magnetometer available:', isAvailable);
+      
+      if (!isAvailable) {
+        setMagnetometerAvailable(false);
+        setError('Magnetometer not available on this device');
+        return false;
+      }
+      
+      setMagnetometerAvailable(true);
+      
+      // Set update interval (100ms = 10Hz)
+      await Magnetometer.setUpdateInterval(100);
+      
+      // Subscribe to magnetometer updates
+      subscriptionRef.current = Magnetometer.addListener((data) => {
+        if (!isMountedRef.current) {
+          console.log('Component unmounted, ignoring magnetometer data');
+          return;
+        }
+
+        try {
+          const { x, y } = data;
+          
+          // Validate data
+          if (isNaN(x) || isNaN(y)) {
+            console.warn('Invalid magnetometer data received:', data);
+            return;
+          }
+
+          // Calculate heading from magnetometer data
+          let angle = Math.atan2(y, x) * (180 / Math.PI);
+          angle = (angle + 360) % 360;
+          
+          setDeviceHeading(angle);
+        } catch (err) {
+          console.error('Error processing magnetometer data:', err);
+        }
+      });
+
+      console.log('AR magnetometer subscription established successfully');
+      retryCountRef.current = 0;
+      return true;
+    } catch (err) {
+      console.error('Error setting up AR magnetometer:', err);
+      
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Magnetometer error: ${errorMessage}`);
+      
+      // Retry logic
+      if (retryCountRef.current < MAX_RETRIES) {
+        retryCountRef.current++;
+        console.log(`Retrying AR magnetometer setup (${retryCountRef.current}/${MAX_RETRIES})...`);
+        
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setupMagnetometer();
+          }
+        }, 1000 * retryCountRef.current);
+      }
+      
+      return false;
+    }
+  }, []);
+
+  // Initialize compass with location and magnetometer
   const initializeCompass = useCallback(async () => {
+    if (!isMountedRef.current) {
+      console.log('Component unmounted, skipping initialization');
+      return;
+    }
+
     try {
       console.log('Initializing AR Qibla Compass...');
       setLoading(true);
+      setError(null);
 
       // Request location permission
+      console.log('Requesting location permission...');
       const { status } = await Location.requestForegroundPermissionsAsync();
+      
       if (status !== 'granted') {
+        console.warn('Location permission denied');
+        setError('Location permission is required');
         Alert.alert(
           'Permission Required',
-          'Location permission is required to determine Qibla direction.'
+          'Location permission is required to determine Qibla direction.',
+          [{ text: 'OK' }]
         );
         setLoading(false);
         return;
       }
 
+      console.log('Location permission granted');
+
       // Get current location
+      console.log('Getting current location...');
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
+      
+      if (!isMountedRef.current) {
+        console.log('Component unmounted during location fetch');
+        return;
+      }
+      
       setLocation(currentLocation);
       console.log('Location obtained:', currentLocation.coords);
 
@@ -68,52 +186,61 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
         currentLocation.coords.longitude
       );
       setQiblaDirection(direction);
-      console.log('Qibla direction:', direction);
+      console.log('Qibla direction calculated:', direction);
 
       // Set up magnetometer
-      Magnetometer.setUpdateInterval(100);
-      const subscription = Magnetometer.addListener((data) => {
-        const { x, y } = data;
-        let angle = Math.atan2(y, x) * (180 / Math.PI);
-        angle = (angle + 360) % 360;
-        setDeviceHeading(angle);
-      });
+      const magnetometerSetup = await setupMagnetometer();
+      
+      if (!magnetometerSetup) {
+        console.warn('Magnetometer setup failed');
+        setError('Unable to access magnetometer sensor');
+      }
 
       setLoading(false);
-
-      // Return cleanup function
-      return () => {
-        try {
-          subscription.remove();
-        } catch (error) {
-          console.log('Error removing magnetometer subscription:', error);
-        }
-      };
-    } catch (error) {
-      console.error('Error initializing compass:', error);
-      Alert.alert('Error', 'Failed to initialize compass. Please try again.');
+    } catch (err) {
+      console.error('Error initializing AR compass:', err);
+      
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      setError(`Initialization error: ${errorMessage}`);
+      
+      Alert.alert(
+        'Error',
+        'Failed to initialize compass. Please ensure location and sensor permissions are granted.',
+        [{ text: 'OK' }]
+      );
+      
       setLoading(false);
     }
-  }, []);
+  }, [setupMagnetometer]);
 
+  // Handle retry button press
+  const handleRetry = useCallback(() => {
+    retryCountRef.current = 0;
+    setError(null);
+    initializeCompass();
+  }, [initializeCompass]);
+
+  // Initialize when visible
   useEffect(() => {
-    let cleanup: (() => void) | undefined;
+    isMountedRef.current = true;
 
     if (visible) {
-      initializeCompass().then((cleanupFn) => {
-        cleanup = cleanupFn;
-      });
+      initializeCompass();
+    } else {
+      cleanupMagnetometer();
     }
 
+    // Cleanup on unmount
     return () => {
-      if (cleanup) {
-        cleanup();
-      }
+      console.log('ARQiblaCompass unmounting, cleaning up...');
+      isMountedRef.current = false;
+      cleanupMagnetometer();
     };
-  }, [visible, initializeCompass]);
+  }, [visible, initializeCompass, cleanupMagnetometer]);
 
+  // Update rotation animations
   useEffect(() => {
-    if (!loading && location) {
+    if (!loading && location && magnetometerAvailable) {
       const targetRotation = qiblaDirection - deviceHeading;
       qiblaRotation.value = withSpring(targetRotation, {
         damping: 15,
@@ -124,7 +251,7 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
         duration: 100,
       });
     }
-  }, [deviceHeading, qiblaDirection, loading, location, qiblaRotation, compassRotation]);
+  }, [deviceHeading, qiblaDirection, loading, location, magnetometerAvailable, qiblaRotation, compassRotation]);
 
   const arrowStyle = useAnimatedStyle(() => {
     return {
@@ -162,17 +289,49 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
   };
 
   const renderARView = () => {
+    // Loading state
     if (loading) {
       return (
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Initializing compass...</Text>
           <Text style={styles.loadingSubtext}>
-            Please ensure location and sensor permissions are granted
+            Getting location and calibrating sensors
           </Text>
         </View>
       );
     }
 
+    // Error state
+    if (error || magnetometerAvailable === false) {
+      return (
+        <View style={styles.errorContainer}>
+          <IconSymbol name="error" size={64} color={colors.error || colors.text} />
+          <Text style={styles.errorTitle}>Compass Unavailable</Text>
+          <Text style={styles.errorText}>
+            {error || 'Magnetometer not available on this device'}
+          </Text>
+          {location && (
+            <Text style={styles.errorSubtext}>
+              Qibla direction: {Math.round(qiblaDirection)}° from North
+            </Text>
+          )}
+          {magnetometerAvailable !== false && (
+            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+              <IconSymbol name="refresh" size={20} color={colors.background} />
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          )}
+          <Text style={styles.helpText}>
+            {magnetometerAvailable === false
+              ? 'Your device does not have a magnetometer sensor required for the compass.'
+              : 'Make sure location and sensor permissions are granted, then try again.'}
+          </Text>
+        </View>
+      );
+    }
+
+    // Normal AR view
     return (
       <View style={styles.arContainer}>
         <View style={styles.compassContainer}>
@@ -255,6 +414,9 @@ export default function ARQiblaCompass({ visible, onClose }: ARQiblaCompassProps
           <Text style={styles.instructionsText}>
             Hold your device flat and rotate until the arrow points upward
           </Text>
+          <Text style={styles.calibrationHint}>
+            Move device in figure-8 pattern to calibrate
+          </Text>
         </View>
       </View>
     );
@@ -285,18 +447,64 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 40,
+    gap: 20,
   },
   loadingText: {
     fontSize: 20,
     fontWeight: 'bold',
     color: colors.text,
-    marginBottom: 12,
   },
   loadingSubtext: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+    gap: 16,
+  },
+  errorTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.error || colors.text,
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  errorSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.background,
+  },
+  helpText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 8,
   },
   arContainer: {
     flex: 1,
@@ -433,11 +641,18 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
+    gap: 8,
   },
   instructionsText: {
     fontSize: 14,
     color: colors.text,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  calibrationHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });

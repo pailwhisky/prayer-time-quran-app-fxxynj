@@ -139,16 +139,16 @@ export default function QiblaCompass({ latitude, longitude, visible = true, onCl
       <View style={styles.compassContainer}>
         {/* Ornamental border */}
         <View style={styles.ornamentalBorder}>
-          <View style={styles.cornerOrnament} style={{ top: -2, left: -2 }}>
+          <View style={[styles.cornerOrnament, { top: -2, left: -2 }]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
-          <View style={styles.cornerOrnament} style={{ top: -2, right: -2 }}>
+          <View style={[styles.cornerOrnament, { top: -2, right: -2 }]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
-          <View style={styles.cornerOrnament} style={{ bottom: -2, left: -2 }}>
+          <View style={[styles.cornerOrnament, { bottom: -2, left: -2 }]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
-          <View style={styles.cornerOrnament} style={{ bottom: -2, right: -2 }}>
+          <View style={[styles.cornerOrnament, { bottom: -2, right: -2 }]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
         </View>

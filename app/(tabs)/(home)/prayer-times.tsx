@@ -6,7 +6,7 @@ import PrayerTimeItem from '@/components/PrayerTimeItem';
 import * as Location from 'expo-location';
 import { PrayerCalculator, PrayerTimesData, PrayerTime } from '@/utils/prayerTimes';
 import { colors } from '@/styles/commonStyles';
-import { Stack } from 'expo-router';
+import { Stack, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import * as Notifications from 'expo-notifications';
@@ -18,7 +18,9 @@ import {
   Alert,
   RefreshControl,
   Platform,
+  TouchableOpacity,
 } from 'react-native';
+import { IconSymbol } from '@/components/IconSymbol';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -30,6 +32,7 @@ Notifications.setNotificationHandler({
 });
 
 export default function PrayerTimesScreen() {
+  const navigation = useNavigation();
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [prayerTimes, setPrayerTimes] = useState<PrayerTimesData | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -37,6 +40,22 @@ export default function PrayerTimesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState(false);
+
+  // Add close button to header
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginRight: 12, padding: 4 }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Close"
+        >
+          <IconSymbol name="close" size={24} color={colors.text} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   // Memoize screen options to prevent re-creation on every render
   const screenOptions = useMemo(() => ({ headerShown: false }), []);
@@ -218,7 +237,7 @@ export default function PrayerTimesScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <Stack.Screen options={screenOptions} />
-        <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
+        <NavigationHeader title="Prayer Times" showBack={true} showClose={false} />
         
         <View style={styles.loadingContainer}>
           <View style={styles.loadingOrnament}>
@@ -236,7 +255,7 @@ export default function PrayerTimesScreen() {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <Stack.Screen options={screenOptions} />
-        <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
+        <NavigationHeader title="Prayer Times" showBack={true} showClose={false} />
         
         <View style={styles.errorContainer}>
           <View style={styles.errorOrnament}>
@@ -256,7 +275,7 @@ export default function PrayerTimesScreen() {
       
       <NavigationHeader
         title="Prayer Times"
-        showBack={false}
+        showBack={true}
         showClose={false}
       />
 

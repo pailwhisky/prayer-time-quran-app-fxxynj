@@ -11,7 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useNavigation } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -42,10 +42,15 @@ const SURAHS: Surah[] = [
 ];
 
 export default function QuranScreen() {
+  const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>(SURAHS);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Add close button to header (only if this is a sub-page)
+  // Since quran.tsx is a root tab, we don't need the close button here
+  // But if you navigate to it from elsewhere, you might want it
 
   useEffect(() => {
     loadBookmarks();

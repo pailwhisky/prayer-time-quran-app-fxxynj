@@ -1,10 +1,9 @@
 
-// hooks/useCloseButton.ts
+import React from 'react';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
 
 /**
  * Custom hook to add a consistent "X" close button to sub-pages

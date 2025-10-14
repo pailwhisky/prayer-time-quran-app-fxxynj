@@ -74,7 +74,7 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color={colors.primary} />
+          <ActivityIndicator size="small" color={colors.gold} />
           <Text style={styles.loadingText}>Loading inspiration...</Text>
         </View>
       </View>
@@ -88,6 +88,17 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
       exiting={FadeOut.duration(400)}
     >
       <View style={styles.quoteContainer}>
+        {/* Ornamental top border */}
+        <View style={styles.ornamentalTop}>
+          <View style={styles.ornamentDot} />
+          <View style={styles.ornamentLine} />
+          <View style={styles.ornamentCenter}>
+            <Text style={styles.ornamentIcon}>✦</Text>
+          </View>
+          <View style={styles.ornamentLine} />
+          <View style={styles.ornamentDot} />
+        </View>
+
         {showEnhanced && enhancedQuote ? (
           <>
             <Text style={styles.arabicText}>{enhancedQuote.arabic}</Text>
@@ -96,7 +107,7 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
             
             <View style={styles.enhancedSection}>
               <View style={styles.enhancedHeader}>
-                <IconSymbol name="sparkles" size={16} color={colors.accent} />
+                <IconSymbol name="sparkles" size={16} color={colors.gold} />
                 <Text style={styles.enhancedLabel}>AI-Enhanced Insight</Text>
               </View>
               <Text style={styles.contextText}>{enhancedQuote.context}</Text>
@@ -113,14 +124,26 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
         ) : (
           <>
             <Text style={styles.arabicText}>{quote.arabic}</Text>
+            
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerIcon}>❖</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
             <Text style={styles.quoteText}>"{quote.text}"</Text>
             <Text style={styles.reference}>{quote.reference}</Text>
             
             {(isBeforeFirstPrayer || isAfterLastPrayer) && (
               <View style={styles.timingIndicator}>
-                <Text style={styles.timingText}>
-                  {isBeforeFirstPrayer ? '🌅 Morning Reflection' : '🌙 Evening Reflection'}
-                </Text>
+                <View style={styles.timingBadge}>
+                  <Text style={styles.timingIcon}>
+                    {isBeforeFirstPrayer ? '🌅' : '🌙'}
+                  </Text>
+                  <Text style={styles.timingText}>
+                    {isBeforeFirstPrayer ? 'Morning Reflection' : 'Evening Reflection'}
+                  </Text>
+                </View>
               </View>
             )}
 
@@ -131,10 +154,10 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
                 disabled={loadingEnhanced}
               >
                 {loadingEnhanced ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
+                  <ActivityIndicator size="small" color={colors.gold} />
                 ) : (
                   <>
-                    <IconSymbol name="sparkles" size={18} color={colors.primary} />
+                    <IconSymbol name="sparkles" size={18} color={colors.gold} />
                     <Text style={styles.enhanceButtonText}>Get AI Insights</Text>
                   </>
                 )}
@@ -149,6 +172,17 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
             )}
           </>
         )}
+
+        {/* Ornamental bottom border */}
+        <View style={styles.ornamentalBottom}>
+          <View style={styles.ornamentDot} />
+          <View style={styles.ornamentLine} />
+          <View style={styles.ornamentCenter}>
+            <Text style={styles.ornamentIcon}>✦</Text>
+          </View>
+          <View style={styles.ornamentLine} />
+          <View style={styles.ornamentDot} />
+        </View>
       </View>
     </Animated.View>
   );
@@ -160,11 +194,11 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     backgroundColor: colors.card,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 20,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
+    borderWidth: 2,
+    borderColor: colors.gold,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 12,
@@ -176,72 +210,138 @@ const styles = StyleSheet.create({
   },
   quoteContainer: {
     backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: `0px 4px 8px ${colors.shadow}`,
-    elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: colors.accent,
+    borderRadius: 16,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    boxShadow: `0px 6px 12px ${colors.shadow}`,
+    elevation: 4,
+    position: 'relative',
+  },
+  ornamentalTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    gap: 8,
+  },
+  ornamentalBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 8,
+  },
+  ornamentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.gold,
+  },
+  ornamentLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.gold,
+  },
+  ornamentCenter: {
+    paddingHorizontal: 8,
+  },
+  ornamentIcon: {
+    fontSize: 16,
+    color: colors.gold,
   },
   arabicText: {
-    fontSize: 18,
+    fontSize: 22,
     color: colors.primary,
     textAlign: 'center',
     marginBottom: 16,
-    lineHeight: 28,
-    fontWeight: '500',
+    lineHeight: 36,
+    fontWeight: '600',
+    letterSpacing: 1.5,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 16,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.border,
+  },
+  dividerIcon: {
+    fontSize: 12,
+    color: colors.gold,
   },
   quoteText: {
-    fontSize: 16,
+    fontSize: 17,
     color: colors.text,
     textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 12,
+    lineHeight: 28,
+    marginBottom: 16,
     fontStyle: 'italic',
+    fontWeight: '500',
   },
   reference: {
-    fontSize: 14,
-    color: colors.textSecondary,
+    fontSize: 15,
+    color: colors.gold,
     textAlign: 'center',
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   timingIndicator: {
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 20,
+    paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.gold,
     alignItems: 'center',
+  },
+  timingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.lightGold,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  timingIcon: {
+    fontSize: 16,
   },
   timingText: {
     fontSize: 14,
-    color: colors.accent,
-    fontWeight: '600',
+    color: colors.primary,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   enhanceButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    backgroundColor: 'rgba(212, 163, 115, 0.1)',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.accent,
+    marginTop: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    backgroundColor: colors.lightGold,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: colors.gold,
   },
   enhanceButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: colors.primary,
+    letterSpacing: 0.5,
   },
   enhancedSection: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 20,
+    paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
+    borderTopColor: colors.gold,
   },
   enhancedHeader: {
     flexDirection: 'row',
@@ -252,24 +352,26 @@ const styles = StyleSheet.create({
   enhancedLabel: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.accent,
+    color: colors.gold,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   contextText: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
-    lineHeight: 21,
+    lineHeight: 24,
     marginBottom: 12,
   },
   reflectionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
-    lineHeight: 21,
+    lineHeight: 24,
     fontStyle: 'italic',
-    backgroundColor: 'rgba(0, 70, 67, 0.05)',
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: colors.lightGold,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.gold,
   },
   toggleButton: {
     marginTop: 12,
@@ -286,11 +388,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    marginTop: 16,
-    paddingVertical: 10,
+    marginTop: 20,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    borderRadius: 8,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.border,
   },

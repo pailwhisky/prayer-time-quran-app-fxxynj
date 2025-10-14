@@ -1,15 +1,15 @@
 
+import { colors } from '@/styles/commonStyles';
+import { getQiblaDirection } from '@/utils/prayerTimes';
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Dimensions, Alert, TouchableOpacity } from 'react-native';
-import { Magnetometer } from 'expo-sensors';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { getQiblaDirection } from '@/utils/prayerTimes';
-import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
+import { Magnetometer } from 'expo-sensors';
+import { View, Text, StyleSheet, Dimensions, Alert, TouchableOpacity } from 'react-native';
 
 interface QiblaCompassProps {
   latitude: number;
@@ -18,281 +18,223 @@ interface QiblaCompassProps {
   onClose?: () => void;
 }
 
-const COMPASS_SIZE = Dimensions.get('window').width * 0.7;
+const COMPASS_SIZE = Math.min(Dimensions.get('window').width - 80, 300);
 
 export default function QiblaCompass({ latitude, longitude, visible = true, onClose }: QiblaCompassProps) {
-  const [deviceHeading, setDeviceHeading] = useState(0);
-  const [qiblaDirection, setQiblaDirection] = useState(0);
-  const [magnetometerAvailable, setMagnetometerAvailable] = useState<boolean | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isInitializing, setIsInitializing] = useState(true);
+  const [qiblaDirection, setQiblaDirection] = useState<number>(0);
+  const [deviceHeading, setDeviceHeading] = useState<number>(0);
+  const [magnetometerAvailable, setMagnetometerAvailable] = useState<boolean>(true);
+  const [isInitializing, setIsInitializing] = useState<boolean>(true);
+  
   const qiblaRotation = useSharedValue(0);
-  const subscriptionRef = useRef<any>(null);
-  const isMountedRef = useRef(true);
-  const retryCountRef = useRef(0);
-  const MAX_RETRIES = 3;
+  const compassRotation = useSharedValue(0);
+  const subscriptionRef = useRef<{ remove: () => void } | null>(null);
 
-  // Calculate Qibla direction when coordinates change
+  // Calculate Qibla direction
   useEffect(() => {
-    try {
-      const direction = getQiblaDirection(latitude, longitude);
-      setQiblaDirection(direction);
-      console.log('Qibla direction calculated:', direction);
-    } catch (error) {
-      console.error('Error calculating Qibla direction:', error);
-      setError('Unable to calculate Qibla direction');
-    }
+    const direction = getQiblaDirection(latitude, longitude);
+    setQiblaDirection(direction);
+    console.log(`🧭 Qibla direction calculated: ${direction.toFixed(2)}°`);
   }, [latitude, longitude]);
 
-  // Check magnetometer availability
-  const checkMagnetometerAvailability = useCallback(async () => {
+  // Initialize magnetometer
+  const initializeMagnetometer = useCallback(async () => {
     try {
-      console.log('Checking magnetometer availability...');
-      const isAvailable = await Magnetometer.isAvailableAsync();
-      console.log('Magnetometer available:', isAvailable);
+      setIsInitializing(true);
+      console.log('🧭 Initializing magnetometer...');
       
-      if (!isAvailable) {
+      const available = await Magnetometer.isAvailableAsync();
+      console.log(`🧭 Magnetometer available: ${available}`);
+      
+      if (!available) {
         setMagnetometerAvailable(false);
-        setError('Magnetometer not available on this device');
-        console.warn('Magnetometer not available on this device');
-        return false;
-      }
-      
-      setMagnetometerAvailable(true);
-      return true;
-    } catch (err) {
-      console.error('Error checking magnetometer availability:', err);
-      setMagnetometerAvailable(false);
-      setError('Unable to access magnetometer sensor');
-      return false;
-    }
-  }, []);
-
-  // Setup magnetometer subscription
-  const setupMagnetometer = useCallback(async () => {
-    if (!isMountedRef.current) {
-      console.log('Component unmounted, skipping magnetometer setup');
-      return false;
-    }
-
-    try {
-      console.log('Setting up magnetometer subscription...');
-      
-      // Set update interval (100ms = 10Hz)
-      await Magnetometer.setUpdateInterval(100);
-      
-      // Subscribe to magnetometer updates
-      subscriptionRef.current = Magnetometer.addListener((data) => {
-        if (!isMountedRef.current) {
-          console.log('Component unmounted, ignoring magnetometer data');
-          return;
-        }
-
-        try {
-          const { x, y } = data;
-          
-          // Validate data
-          if (isNaN(x) || isNaN(y)) {
-            console.warn('Invalid magnetometer data received:', data);
-            return;
-          }
-
-          // Calculate heading from magnetometer data
-          let angle = Math.atan2(y, x) * (180 / Math.PI);
-          angle = (angle + 360) % 360;
-          
-          setDeviceHeading(angle);
-        } catch (err) {
-          console.error('Error processing magnetometer data:', err);
-        }
-      });
-
-      console.log('Magnetometer subscription established successfully');
-      setError(null);
-      retryCountRef.current = 0;
-      return true;
-    } catch (err) {
-      console.error('Error setting up magnetometer:', err);
-      
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Magnetometer error: ${errorMessage}`);
-      
-      // Retry logic
-      if (retryCountRef.current < MAX_RETRIES) {
-        retryCountRef.current++;
-        console.log(`Retrying magnetometer setup (${retryCountRef.current}/${MAX_RETRIES})...`);
-        
-        setTimeout(() => {
-          if (isMountedRef.current) {
-            setupMagnetometer();
-          }
-        }, 1000 * retryCountRef.current);
-      } else {
         Alert.alert(
-          'Sensor Error',
-          'Unable to access device magnetometer after multiple attempts. Please ensure sensor permissions are granted and try restarting the app.',
+          'Compass Not Available',
+          'Your device does not have a magnetometer sensor. The compass will show the Qibla direction relative to North.',
           [{ text: 'OK' }]
         );
-      }
-      
-      return false;
-    }
-  }, []);
-
-  // Cleanup magnetometer subscription
-  const cleanupMagnetometer = useCallback(() => {
-    if (subscriptionRef.current) {
-      try {
-        console.log('Cleaning up magnetometer subscription...');
-        subscriptionRef.current.remove();
-        subscriptionRef.current = null;
-        console.log('Magnetometer subscription removed successfully');
-      } catch (err) {
-        console.error('Error removing magnetometer subscription:', err);
-      }
-    }
-  }, []);
-
-  // Initialize magnetometer when component becomes visible
-  const initializeMagnetometer = useCallback(async () => {
-    if (!visible) {
-      console.log('Component not visible, skipping initialization');
-      return;
-    }
-
-    setIsInitializing(true);
-    setError(null);
-
-    try {
-      // Check if magnetometer is available
-      const isAvailable = await checkMagnetometerAvailability();
-      
-      if (!isAvailable) {
         setIsInitializing(false);
         return;
       }
 
-      // Setup magnetometer subscription
-      await setupMagnetometer();
-    } catch (err) {
-      console.error('Error initializing magnetometer:', err);
-      setError('Failed to initialize magnetometer');
-    } finally {
+      setMagnetometerAvailable(true);
+      
+      // Set update interval
+      Magnetometer.setUpdateInterval(100);
+      
+      // Subscribe to magnetometer updates
+      const subscription = Magnetometer.addListener((data) => {
+        const { x, y } = data;
+        let angle = Math.atan2(y, x) * (180 / Math.PI);
+        angle = (angle + 360) % 360;
+        setDeviceHeading(angle);
+      });
+      
+      subscriptionRef.current = subscription;
+      console.log('✅ Magnetometer initialized successfully');
       setIsInitializing(false);
+    } catch (error) {
+      console.error('❌ Error initializing magnetometer:', error);
+      setMagnetometerAvailable(false);
+      setIsInitializing(false);
+      Alert.alert(
+        'Compass Error',
+        'Unable to access device compass. Please check your device permissions.',
+        [{ text: 'OK' }]
+      );
     }
-  }, [visible, checkMagnetometerAvailability, setupMagnetometer]);
+  }, []);
 
-  // Handle retry button press
-  const handleRetry = useCallback(() => {
-    retryCountRef.current = 0;
-    initializeMagnetometer();
-  }, [initializeMagnetometer]);
+  // Cleanup magnetometer
+  const cleanupMagnetometer = useCallback(() => {
+    console.log('🧹 Cleaning up magnetometer subscription');
+    if (subscriptionRef.current) {
+      subscriptionRef.current.remove();
+      subscriptionRef.current = null;
+    }
+  }, []);
 
-  // Initialize on mount and when visibility changes
+  // Initialize on mount if visible
   useEffect(() => {
-    isMountedRef.current = true;
-
-    if (visible && magnetometerAvailable !== false) {
+    if (visible && magnetometerAvailable) {
       initializeMagnetometer();
-    } else {
-      cleanupMagnetometer();
     }
-
-    // Cleanup on unmount
+    
     return () => {
-      console.log('QiblaCompass unmounting, cleaning up...');
-      isMountedRef.current = false;
       cleanupMagnetometer();
     };
   }, [visible, magnetometerAvailable, initializeMagnetometer, cleanupMagnetometer]);
 
-  // Update rotation animation
+  // Update compass rotation
   useEffect(() => {
-    if (!magnetometerAvailable || isInitializing) {
-      return;
+    if (!isInitializing && magnetometerAvailable) {
+      const relativeQibla = (qiblaDirection - deviceHeading + 360) % 360;
+      qiblaRotation.value = withSpring(relativeQibla, {
+        damping: 15,
+        stiffness: 100,
+      });
+      compassRotation.value = withSpring(-deviceHeading, {
+        damping: 15,
+        stiffness: 100,
+      });
     }
+  }, [deviceHeading, qiblaDirection, qiblaRotation, magnetometerAvailable, isInitializing, compassRotation]);
 
-    const targetRotation = qiblaDirection - deviceHeading;
-    qiblaRotation.value = withSpring(targetRotation, {
-      damping: 15,
-      stiffness: 100,
-    });
-  }, [deviceHeading, qiblaDirection, qiblaRotation, magnetometerAvailable, isInitializing]);
-
-  const arrowStyle = useAnimatedStyle(() => {
+  const qiblaAnimatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ rotate: `${qiblaRotation.value}deg` }],
     };
   });
 
-  if (!visible) {
-    return null;
-  }
+  const compassAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ rotate: `${compassRotation.value}deg` }],
+    };
+  });
 
-  // Loading state
-  if (isInitializing) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <IconSymbol name="explore" size={48} color={colors.primary} />
-          <Text style={styles.loadingText}>Initializing compass...</Text>
-          <Text style={styles.loadingSubtext}>
-            Calibrating magnetometer sensor
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  if (!visible) return null;
 
-  // Error state
-  if (error || magnetometerAvailable === false) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.errorContainer}>
-          <IconSymbol name="error" size={48} color={colors.error || colors.text} />
-          <Text style={styles.errorText}>
-            {error || 'Magnetometer not available'}
-          </Text>
-          <Text style={styles.errorSubtext}>
-            Qibla direction: {Math.round(qiblaDirection)}° from North
-          </Text>
-          {magnetometerAvailable !== false && (
-            <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
-              <IconSymbol name="refresh" size={20} color={colors.background} />
-              <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-          )}
-          <Text style={styles.helpText}>
-            {magnetometerAvailable === false
-              ? 'Your device does not have a magnetometer sensor.'
-              : 'Make sure sensor permissions are granted and try again.'}
-          </Text>
-        </View>
-      </View>
-    );
-  }
-
-  // Normal compass view
   return (
     <View style={styles.container}>
       <View style={styles.compassContainer}>
-        <View style={styles.compass}>
-          <Text style={styles.directionLabel}>N</Text>
-          <Animated.View style={[styles.arrow, arrowStyle]}>
-            <View style={styles.arrowHead} />
-            <View style={styles.arrowBody} />
+        {/* Ornamental border */}
+        <View style={styles.ornamentalBorder}>
+          <View style={styles.cornerOrnament} style={{ top: -2, left: -2 }}>
+            <Text style={styles.cornerText}>◆</Text>
+          </View>
+          <View style={styles.cornerOrnament} style={{ top: -2, right: -2 }}>
+            <Text style={styles.cornerText}>◆</Text>
+          </View>
+          <View style={styles.cornerOrnament} style={{ bottom: -2, left: -2 }}>
+            <Text style={styles.cornerText}>◆</Text>
+          </View>
+          <View style={styles.cornerOrnament} style={{ bottom: -2, right: -2 }}>
+            <Text style={styles.cornerText}>◆</Text>
+          </View>
+        </View>
+
+        {/* Compass background with Islamic pattern */}
+        <View style={styles.compassBackground}>
+          {/* Decorative circles */}
+          <View style={styles.decorativeCircle1} />
+          <View style={styles.decorativeCircle2} />
+          <View style={styles.decorativeCircle3} />
+
+          {/* Compass rose with cardinal directions */}
+          <Animated.View style={[styles.compassRose, compassAnimatedStyle]}>
+            {/* Cardinal directions */}
+            <View style={[styles.directionMarker, { top: 10 }]}>
+              <Text style={styles.directionText}>N</Text>
+            </View>
+            <View style={[styles.directionMarker, { right: 10 }]}>
+              <Text style={styles.directionText}>E</Text>
+            </View>
+            <View style={[styles.directionMarker, { bottom: 10 }]}>
+              <Text style={styles.directionText}>S</Text>
+            </View>
+            <View style={[styles.directionMarker, { left: 10 }]}>
+              <Text style={styles.directionText}>W</Text>
+            </View>
+
+            {/* Degree markers */}
+            {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((degree) => (
+              <View
+                key={degree}
+                style={[
+                  styles.degreeMarker,
+                  {
+                    transform: [
+                      { rotate: `${degree}deg` },
+                      { translateY: -COMPASS_SIZE / 2 + 20 },
+                    ],
+                  },
+                ]}
+              >
+                <View style={degree % 90 === 0 ? styles.majorTick : styles.minorTick} />
+              </View>
+            ))}
           </Animated.View>
+
+          {/* Qibla indicator (Kaaba icon) */}
+          <Animated.View style={[styles.qiblaIndicator, qiblaAnimatedStyle]}>
+            <View style={styles.qiblaArrow}>
+              <View style={styles.arrowHead} />
+              <View style={styles.arrowBody} />
+              <Text style={styles.kaabaIcon}>🕋</Text>
+            </View>
+          </Animated.View>
+
+          {/* Center ornament */}
+          <View style={styles.centerOrnament}>
+            <View style={styles.centerDot} />
+            <Text style={styles.centerStar}>✦</Text>
+          </View>
+        </View>
+
+        {/* Status text */}
+        <View style={styles.statusContainer}>
+          {isInitializing ? (
+            <Text style={styles.statusText}>Initializing compass...</Text>
+          ) : !magnetometerAvailable ? (
+            <Text style={styles.statusText}>Compass not available</Text>
+          ) : (
+            <>
+              <Text style={styles.directionLabel}>Qibla Direction</Text>
+              <Text style={styles.directionValue}>{qiblaDirection.toFixed(0)}°</Text>
+              <Text style={styles.statusHint}>Point your device towards the Kaaba</Text>
+            </>
+          )}
+        </View>
+
+        {/* Decorative bottom border */}
+        <View style={styles.bottomOrnament}>
+          <View style={styles.ornamentDot} />
+          <View style={styles.ornamentLine} />
+          <Text style={styles.ornamentStar}>✦</Text>
+          <View style={styles.ornamentLine} />
+          <View style={styles.ornamentDot} />
         </View>
       </View>
-      <Text style={styles.infoText}>
-        Point your device towards the arrow to face Qibla
-      </Text>
-      <Text style={styles.degreeText}>
-        Qibla: {Math.round(qiblaDirection)}° | Device: {Math.round(deviceHeading)}°
-      </Text>
-      <Text style={styles.calibrationHint}>
-        Move your device in a figure-8 pattern to calibrate
-      </Text>
     </View>
   );
 }
@@ -301,127 +243,207 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 20,
+    paddingVertical: 20,
   },
   compassContainer: {
-    width: COMPASS_SIZE,
-    height: COMPASS_SIZE,
     alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 20,
+    padding: 24,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    boxShadow: `0px 6px 12px ${colors.shadow}`,
+    elevation: 4,
+    position: 'relative',
   },
-  compass: {
+  ornamentalBorder: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: 20,
+  },
+  cornerOrnament: {
+    position: 'absolute',
+  },
+  cornerText: {
+    fontSize: 12,
+    color: colors.gold,
+    fontWeight: 'bold',
+  },
+  compassBackground: {
     width: COMPASS_SIZE,
     height: COMPASS_SIZE,
     borderRadius: COMPASS_SIZE / 2,
-    backgroundColor: colors.card,
-    borderWidth: 3,
-    borderColor: colors.primary,
+    backgroundColor: colors.lightGold,
     alignItems: 'center',
     justifyContent: 'center',
-    boxShadow: `0 4px 12px ${colors.shadow}`,
-    elevation: 5,
+    position: 'relative',
+    borderWidth: 3,
+    borderColor: colors.gold,
+    overflow: 'hidden',
   },
-  directionLabel: {
+  decorativeCircle1: {
     position: 'absolute',
-    top: 20,
-    fontSize: 24,
+    width: COMPASS_SIZE - 20,
+    height: COMPASS_SIZE - 20,
+    borderRadius: (COMPASS_SIZE - 20) / 2,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    opacity: 0.3,
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    width: COMPASS_SIZE - 60,
+    height: COMPASS_SIZE - 60,
+    borderRadius: (COMPASS_SIZE - 60) / 2,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    opacity: 0.4,
+  },
+  decorativeCircle3: {
+    position: 'absolute',
+    width: COMPASS_SIZE - 100,
+    height: COMPASS_SIZE - 100,
+    borderRadius: (COMPASS_SIZE - 100) / 2,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    opacity: 0.5,
+  },
+  compassRose: {
+    width: COMPASS_SIZE,
+    height: COMPASS_SIZE,
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  directionMarker: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  directionText: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.primary,
+    textShadowColor: colors.card,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 3,
   },
-  arrow: {
+  degreeMarker: {
+    position: 'absolute',
+    width: 2,
+    height: 10,
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  majorTick: {
+    width: 3,
+    height: 15,
+    backgroundColor: colors.primary,
+  },
+  minorTick: {
+    width: 2,
+    height: 10,
+    backgroundColor: colors.textSecondary,
+  },
+  qiblaIndicator: {
+    position: 'absolute',
+    width: COMPASS_SIZE,
+    height: COMPASS_SIZE,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  qiblaArrow: {
+    alignItems: 'center',
+    marginTop: 30,
   },
   arrowHead: {
     width: 0,
     height: 0,
-    borderLeftWidth: 20,
-    borderRightWidth: 20,
-    borderBottomWidth: 40,
+    borderLeftWidth: 15,
+    borderRightWidth: 15,
+    borderBottomWidth: 25,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
     borderBottomColor: colors.highlight,
   },
   arrowBody: {
     width: 8,
-    height: 80,
+    height: 40,
     backgroundColor: colors.highlight,
-    borderRadius: 4,
+    marginTop: -2,
   },
-  infoText: {
-    marginTop: 24,
-    fontSize: 16,
-    color: colors.text,
-    textAlign: 'center',
-    fontWeight: '600',
+  kaabaIcon: {
+    fontSize: 32,
+    marginTop: 8,
   },
-  degreeText: {
-    marginTop: 12,
+  centerOrnament: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.gold,
+    borderWidth: 2,
+    borderColor: colors.card,
+  },
+  centerStar: {
+    position: 'absolute',
+    fontSize: 24,
+    color: colors.gold,
+    opacity: 0.3,
+  },
+  statusContainer: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  statusText: {
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
   },
-  calibrationHint: {
-    marginTop: 8,
+  directionLabel: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  directionValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  statusHint: {
     fontSize: 12,
     color: colors.textSecondary,
-    textAlign: 'center',
     fontStyle: 'italic',
   },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 18,
-    color: colors.text,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  loadingSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  errorContainer: {
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  errorText: {
-    fontSize: 16,
-    color: colors.error || colors.text,
-    textAlign: 'center',
-    fontWeight: '600',
-  },
-  errorSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  retryButton: {
+  bottomOrnament: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
     gap: 8,
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginTop: 8,
+    width: '100%',
   },
-  retryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.background,
+  ornamentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.gold,
   },
-  helpText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 8,
-    lineHeight: 18,
+  ornamentLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.gold,
+  },
+  ornamentStar: {
+    fontSize: 14,
+    color: colors.gold,
   },
 });

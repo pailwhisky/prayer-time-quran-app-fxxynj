@@ -8,11 +8,15 @@ export const colors = {
   primary: '#004643',         // Deep Teal
   secondary: '#D4A373',       // Light Brown
   accent: '#D4A373',          // Light Brown
+  gold: '#C9A961',            // Islamic Gold
+  darkGold: '#B8935A',        // Darker Gold
   card: '#FFFFFF',            // White
   highlight: '#E07A5F',       // Burnt Orange
   shadow: 'rgba(0, 70, 67, 0.1)',
   border: 'rgba(0, 70, 67, 0.2)',
   quranGreen: '#006B5F',      // Quran Green for better visibility
+  ornamental: '#8B7355',      // Ornamental Brown
+  lightGold: '#F4E4C1',       // Light Gold Background
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -89,5 +93,20 @@ export const commonStyles = StyleSheet.create({
     width: 60,
     height: 60,
     tintColor: colors.primary,
+  },
+  // Islamic ornamental styles
+  ornamentalBorder: {
+    borderWidth: 2,
+    borderColor: colors.gold,
+    borderStyle: 'solid',
+  },
+  islamicPattern: {
+    backgroundColor: colors.lightGold,
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  arabicText: {
+    fontWeight: '600',
+    letterSpacing: 1,
   },
 });

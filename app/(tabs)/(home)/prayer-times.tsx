@@ -221,7 +221,10 @@ export default function PrayerTimesScreen() {
         <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
         
         <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>🕌</Text>
+          <View style={styles.loadingOrnament}>
+            <Text style={styles.loadingIcon}>🕌</Text>
+            <View style={styles.loadingBorder} />
+          </View>
           <Text style={styles.loadingTitle}>Loading Prayer Times</Text>
           <Text style={styles.loadingSubtitle}>Getting your location...</Text>
         </View>
@@ -236,7 +239,10 @@ export default function PrayerTimesScreen() {
         <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
         
         <View style={styles.errorContainer}>
-          <Text style={styles.errorIcon}>📍</Text>
+          <View style={styles.errorOrnament}>
+            <Text style={styles.errorIcon}>📍</Text>
+            <View style={styles.errorBorder} />
+          </View>
           <Text style={styles.errorTitle}>Location Required</Text>
           <Text style={styles.errorText}>{locationError}</Text>
         </View>
@@ -262,20 +268,39 @@ export default function PrayerTimesScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
+            tintColor={colors.gold}
+            colors={[colors.gold]}
           />
         }
       >
-        {/* Current Time Display */}
+        {/* Current Time Display with Islamic Design */}
         <View style={styles.timeCard}>
+          <View style={styles.timeOrnamentTop}>
+            <View style={styles.ornamentDot} />
+            <View style={styles.ornamentLine} />
+            <Text style={styles.ornamentStar}>✦</Text>
+            <View style={styles.ornamentLine} />
+            <View style={styles.ornamentDot} />
+          </View>
+
           <Text style={styles.currentTime}>{formatCurrentTime()}</Text>
           <Text style={styles.locationText}>{getLocationString()}</Text>
+          
           {!notificationPermission && (
-            <Text style={styles.notificationWarning}>
-              ⚠️ Enable notifications to receive prayer reminders
-            </Text>
+            <View style={styles.notificationWarningContainer}>
+              <Text style={styles.notificationWarning}>
+                ⚠️ Enable notifications to receive prayer reminders
+              </Text>
+            </View>
           )}
+
+          <View style={styles.timeOrnamentBottom}>
+            <View style={styles.ornamentDot} />
+            <View style={styles.ornamentLine} />
+            <Text style={styles.ornamentStar}>✦</Text>
+            <View style={styles.ornamentLine} />
+            <View style={styles.ornamentDot} />
+          </View>
         </View>
 
         {/* Quran Quote */}
@@ -286,7 +311,11 @@ export default function PrayerTimesScreen() {
         {/* Prayer Times List */}
         {prayerTimes && (
           <View style={styles.prayerTimesContainer}>
-            <Text style={styles.sectionTitle}>Today&apos;s Prayer Times</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionLine} />
+              <Text style={styles.sectionTitle}>Today&apos;s Prayer Times</Text>
+              <View style={styles.sectionLine} />
+            </View>
             {PrayerCalculator.getPrayerTimesList(prayerTimes).map((prayer) => (
               <PrayerTimeItem
                 key={prayer.name}
@@ -302,7 +331,11 @@ export default function PrayerTimesScreen() {
         {/* Qibla Compass */}
         {location && (
           <View style={styles.qiblaSection}>
-            <Text style={styles.sectionTitle}>Qibla Direction</Text>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionLine} />
+              <Text style={styles.sectionTitle}>Qibla Direction</Text>
+              <View style={styles.sectionLine} />
+            </View>
             <QiblaCompass
               latitude={location.coords.latitude}
               longitude={location.coords.longitude}
@@ -336,15 +369,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  loadingText: {
-    fontSize: 64,
+  loadingOrnament: {
+    alignItems: 'center',
     marginBottom: 20,
+  },
+  loadingIcon: {
+    fontSize: 72,
+    marginBottom: 12,
+  },
+  loadingBorder: {
+    width: 100,
+    height: 2,
+    backgroundColor: colors.gold,
   },
   loadingTitle: {
     fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 8,
+    letterSpacing: 0.5,
   },
   loadingSubtitle: {
     fontSize: 16,
@@ -356,9 +399,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 40,
   },
-  errorIcon: {
-    fontSize: 64,
+  errorOrnament: {
+    alignItems: 'center',
     marginBottom: 20,
+  },
+  errorIcon: {
+    fontSize: 72,
+    marginBottom: 12,
+  },
+  errorBorder: {
+    width: 100,
+    height: 2,
+    backgroundColor: colors.highlight,
   },
   errorTitle: {
     fontSize: 24,
@@ -366,6 +418,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 12,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   errorText: {
     fontSize: 16,
@@ -375,39 +428,89 @@ const styles = StyleSheet.create({
   },
   timeCard: {
     backgroundColor: colors.card,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     marginBottom: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    boxShadow: `0px 4px 8px ${colors.shadow}`,
-    elevation: 3,
+    borderWidth: 2,
+    borderColor: colors.gold,
+    boxShadow: `0px 6px 12px ${colors.shadow}`,
+    elevation: 4,
+  },
+  timeOrnamentTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    gap: 8,
+    width: '100%',
+  },
+  timeOrnamentBottom: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    gap: 8,
+    width: '100%',
+  },
+  ornamentDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.gold,
+  },
+  ornamentLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.gold,
+  },
+  ornamentStar: {
+    fontSize: 16,
+    color: colors.gold,
   },
   currentTime: {
-    fontSize: 48,
+    fontSize: 52,
     fontWeight: 'bold',
     color: colors.primary,
     marginBottom: 8,
+    letterSpacing: 1,
   },
   locationText: {
     fontSize: 14,
     color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  notificationWarningContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   notificationWarning: {
     fontSize: 12,
     color: colors.highlight,
-    marginTop: 8,
     textAlign: 'center',
+    fontWeight: '600',
   },
   prayerTimesContainer: {
     marginBottom: 24,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 12,
+  },
+  sectionLine: {
+    flex: 1,
+    height: 2,
+    backgroundColor: colors.gold,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 16,
+    color: colors.primary,
+    letterSpacing: 0.5,
   },
   qiblaSection: {
     marginBottom: 24,

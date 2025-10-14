@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import * as Linking from 'expo-linking';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
@@ -142,7 +143,7 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
             { text: 'Cancel', style: 'cancel' },
             {
               text: 'Open Settings',
-              onPress: () => Notifications.openSettingsAsync(),
+              onPress: () => Linking.openSettings(),
             },
           ]
         );

@@ -8,7 +8,7 @@ import { PrayerCalculator, PrayerTimesData, PrayerTime } from '@/utils/prayerTim
 import { colors } from '@/styles/commonStyles';
 import { Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import * as Notifications from 'expo-notifications';
 import {
   View,
@@ -37,6 +37,9 @@ export default function PrayerTimesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState(false);
+
+  // Memoize screen options to prevent re-creation on every render
+  const screenOptions = useMemo(() => ({ headerShown: false }), []);
 
   // Schedule notifications for prayer times
   const schedulePrayerNotifications = useCallback(async (times: PrayerTimesData) => {
@@ -151,7 +154,7 @@ export default function PrayerTimesScreen() {
   useEffect(() => {
     requestNotificationPermissions();
     requestLocationAndLoadPrayerTimes();
-  }, []);
+  }, [requestNotificationPermissions, requestLocationAndLoadPrayerTimes]);
 
   // Update current time every minute
   useEffect(() => {
@@ -160,53 +163,61 @@ export default function PrayerTimesScreen() {
     }, 60000); // Update every minute
 
     return () => clearInterval(timer);
-  }, []);
+  }, [currentTime]);
 
-  // Recalculate next prayer when time changes
+  // Recalculate next prayer when time changes (but only update if needed)
   useEffect(() => {
     if (prayerTimes && location) {
       const updatedTimes = PrayerCalculator.calculatePrayerTimes(
         location.coords.latitude,
         location.coords.longitude
       );
-      setPrayerTimes(updatedTimes);
+      
+      // Only update if the next prayer has changed
+      const currentNextPrayer = PrayerCalculator.getPrayerTimesList(prayerTimes).find(p => p.isNext);
+      const updatedNextPrayer = PrayerCalculator.getPrayerTimesList(updatedTimes).find(p => p.isNext);
+      
+      if (currentNextPrayer?.name !== updatedNextPrayer?.name) {
+        console.log('🔄 Next prayer changed, updating prayer times');
+        setPrayerTimes(updatedTimes);
+      }
     }
-  }, [currentTime]);
+  }, [currentTime, location, prayerTimes]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     requestLocationAndLoadPrayerTimes();
   }, [requestLocationAndLoadPrayerTimes]);
 
-  const formatCurrentTime = () => {
+  const formatCurrentTime = useCallback(() => {
     return currentTime.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true,
     });
-  };
+  }, [currentTime]);
 
-  const getLocationString = () => {
+  const getLocationString = useCallback(() => {
     if (!location) return 'Loading location...';
     return `${location.coords.latitude.toFixed(2)}°, ${location.coords.longitude.toFixed(2)}°`;
-  };
+  }, [location]);
 
-  const isBeforeFirstPrayer = () => {
+  const isBeforeFirstPrayer = useCallback(() => {
     if (!prayerTimes) return false;
     const now = new Date();
     return now < prayerTimes.fajr.time;
-  };
+  }, [prayerTimes]);
 
-  const isAfterLastPrayer = () => {
+  const isAfterLastPrayer = useCallback(() => {
     if (!prayerTimes) return false;
     const now = new Date();
     return now > prayerTimes.isha.time;
-  };
+  }, [prayerTimes]);
 
   if (loading && !prayerTimes) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={screenOptions} />
         <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
         
         <View style={styles.loadingContainer}>
@@ -221,7 +232,7 @@ export default function PrayerTimesScreen() {
   if (locationError && !prayerTimes) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <Stack.Screen options={{ headerShown: false }} />
+        <Stack.Screen options={screenOptions} />
         <NavigationHeader title="Prayer Times" showBack={false} showClose={false} />
         
         <View style={styles.errorContainer}>
@@ -235,7 +246,7 @@ export default function PrayerTimesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={screenOptions} />
       
       <NavigationHeader
         title="Prayer Times"

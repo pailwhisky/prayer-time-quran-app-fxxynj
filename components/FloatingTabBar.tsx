@@ -163,7 +163,6 @@ const styles = StyleSheet.create({
       web: {
         backgroundColor: colors.card,
         backdropFilter: 'blur(10px)',
-        boxShadow: `0 8px 32px ${colors.shadow}`,
       },
     }),
   },

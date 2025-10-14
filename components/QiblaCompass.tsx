@@ -139,16 +139,16 @@ export default function QiblaCompass({ latitude, longitude, visible = true, onCl
       <View style={styles.compassContainer}>
         {/* Ornamental border */}
         <View style={styles.ornamentalBorder}>
-          <View style={[styles.cornerOrnament, { top: -2, left: -2 }]}>
+          <View style={[styles.cornerOrnament, styles.cornerTopLeft]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
-          <View style={[styles.cornerOrnament, { top: -2, right: -2 }]}>
+          <View style={[styles.cornerOrnament, styles.cornerTopRight]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
-          <View style={[styles.cornerOrnament, { bottom: -2, left: -2 }]}>
+          <View style={[styles.cornerOrnament, styles.cornerBottomLeft]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
-          <View style={[styles.cornerOrnament, { bottom: -2, right: -2 }]}>
+          <View style={[styles.cornerOrnament, styles.cornerBottomRight]}>
             <Text style={styles.cornerText}>◆</Text>
           </View>
         </View>
@@ -163,16 +163,16 @@ export default function QiblaCompass({ latitude, longitude, visible = true, onCl
           {/* Compass rose with cardinal directions */}
           <Animated.View style={[styles.compassRose, compassAnimatedStyle]}>
             {/* Cardinal directions */}
-            <View style={[styles.directionMarker, { top: 10 }]}>
+            <View style={[styles.directionMarker, styles.directionTop]}>
               <Text style={styles.directionText}>N</Text>
             </View>
-            <View style={[styles.directionMarker, { right: 10 }]}>
+            <View style={[styles.directionMarker, styles.directionRight]}>
               <Text style={styles.directionText}>E</Text>
             </View>
-            <View style={[styles.directionMarker, { bottom: 10 }]}>
+            <View style={[styles.directionMarker, styles.directionBottom]}>
               <Text style={styles.directionText}>S</Text>
             </View>
-            <View style={[styles.directionMarker, { left: 10 }]}>
+            <View style={[styles.directionMarker, styles.directionLeft]}>
               <Text style={styles.directionText}>W</Text>
             </View>
 
@@ -252,7 +252,6 @@ const styles = StyleSheet.create({
     padding: 24,
     borderWidth: 2,
     borderColor: colors.gold,
-    boxShadow: `0px 6px 12px ${colors.shadow}`,
     elevation: 4,
     position: 'relative',
   },
@@ -266,6 +265,22 @@ const styles = StyleSheet.create({
   },
   cornerOrnament: {
     position: 'absolute',
+  },
+  cornerTopLeft: {
+    top: -2,
+    left: -2,
+  },
+  cornerTopRight: {
+    top: -2,
+    right: -2,
+  },
+  cornerBottomLeft: {
+    bottom: -2,
+    left: -2,
+  },
+  cornerBottomRight: {
+    bottom: -2,
+    right: -2,
   },
   cornerText: {
     fontSize: 12,
@@ -322,6 +337,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  directionTop: {
+    top: 10,
+  },
+  directionRight: {
+    right: 10,
+  },
+  directionBottom: {
+    bottom: 10,
+  },
+  directionLeft: {
+    left: 10,
   },
   directionText: {
     fontSize: 18,

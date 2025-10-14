@@ -9,6 +9,7 @@ import {
   Modal,
   Switch,
   Alert,
+  Platform,
 } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -83,12 +84,74 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
   const [settings, setSettings] = useState<NotificationSettings>(defaultSettings);
   const [showSoundPicker, setShowSoundPicker] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [hasPermission, setHasPermission] = useState(false);
 
   useEffect(() => {
     if (visible) {
       loadSettings();
+      checkPermissions();
     }
   }, [visible]);
+
+  const checkPermissions = async () => {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      setHasPermission(status === 'granted');
+      console.log(`Notification permission status: ${status}`);
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+    }
+  };
+
+  const requestPermissions = async () => {
+    try {
+      const { status } = await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+          allowAnnouncements: true,
+        },
+      });
+      
+      if (status === 'granted') {
+        setHasPermission(true);
+        Alert.alert('Success', 'Notification permissions granted!');
+        
+        // Set up Android channel if needed
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('prayer-times', {
+            name: 'Prayer Times',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            sound: 'default',
+            enableVibrate: true,
+            enableLights: true,
+            lightColor: '#004643',
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+            bypassDnd: true,
+          });
+        }
+      } else {
+        Alert.alert(
+          'Permission Denied',
+          Platform.OS === 'ios'
+            ? 'Please enable notifications in Settings > Notifications > Prayer Times to receive prayer reminders.'
+            : 'Please enable notifications in your device settings to receive prayer reminders.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Open Settings',
+              onPress: () => Notifications.openSettingsAsync(),
+            },
+          ]
+        );
+      }
+    } catch (error) {
+      console.error('Error requesting permissions:', error);
+      Alert.alert('Error', 'Failed to request notification permissions');
+    }
+  };
 
   const loadSettings = async () => {
     try {
@@ -143,7 +206,9 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
       }
 
       // Reschedule notifications with new settings
-      await scheduleNotifications(newSettings);
+      if (hasPermission) {
+        await scheduleNotifications(newSettings);
+      }
       
       Alert.alert('Success', 'Notification settings saved successfully');
     } catch (error) {
@@ -154,10 +219,19 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
 
   const scheduleNotifications = async (notificationSettings: NotificationSettings) => {
     try {
+      if (!hasPermission) {
+        console.log('No notification permission, skipping scheduling');
+        return;
+      }
+
       // Cancel existing notifications
       await Notifications.cancelAllScheduledNotificationsAsync();
+      console.log('Cancelled all existing notifications');
 
-      if (!notificationSettings.enabled) return;
+      if (!notificationSettings.enabled) {
+        console.log('Notifications disabled in settings');
+        return;
+      }
 
       // This is a simplified version - in a real app, you'd integrate with your prayer times calculation
       const now = new Date();
@@ -177,11 +251,14 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
               body: `${prayerNames[prayer].english} prayer is in ${preReminderMinutes} minutes. Time to prepare.`,
               sound: sound !== 'default' ? sound : true,
               data: { prayer, type: 'reminder' },
+              categoryIdentifier: Platform.OS === 'ios' ? 'prayer-reminder' : undefined,
             },
             trigger: {
               date: reminderTime,
+              channelId: 'prayer-times',
             },
           });
+          console.log(`Scheduled reminder for ${prayer} at ${reminderTime.toLocaleTimeString()}`);
         }
 
         // Schedule prayer time notification
@@ -195,16 +272,19 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
               : `Time for ${prayerNames[prayer].english} prayer`,
             sound: sound !== 'default' ? sound : true,
             data: { prayer, type: 'prayer_time' },
+            categoryIdentifier: Platform.OS === 'ios' ? 'prayer-reminder' : undefined,
           },
           trigger: {
             date: prayerTime,
+            channelId: 'prayer-times',
           },
         });
+        console.log(`Scheduled prayer time for ${prayer} at ${prayerTime.toLocaleTimeString()}`);
       }
 
-      console.log('Notifications scheduled successfully');
+      console.log('✅ All notifications scheduled successfully');
     } catch (error) {
-      console.error('Error scheduling notifications:', error);
+      console.error('❌ Error scheduling notifications:', error);
     }
   };
 
@@ -331,6 +411,25 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
         />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Permission Status */}
+          {!hasPermission && (
+            <View style={styles.permissionBanner}>
+              <IconSymbol name="bell.slash" size={24} color={colors.highlight} />
+              <View style={styles.permissionInfo}>
+                <Text style={styles.permissionTitle}>Notifications Disabled</Text>
+                <Text style={styles.permissionDescription}>
+                  Enable notifications to receive prayer reminders
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={styles.permissionButton}
+                onPress={requestPermissions}
+              >
+                <Text style={styles.permissionButtonText}>Enable</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
           {/* Global Settings */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>General Settings</Text>
@@ -348,6 +447,7 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
                   onValueChange={(value) => saveSettings({ ...settings, enabled: value })}
                   trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor={colors.card}
+                  disabled={!hasPermission}
                 />
               </View>
 
@@ -363,6 +463,7 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
                   onValueChange={(value) => saveSettings({ ...settings, vibration: value })}
                   trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor={colors.card}
+                  disabled={!hasPermission}
                 />
               </View>
 
@@ -378,6 +479,7 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
                   onValueChange={(value) => saveSettings({ ...settings, customMessages: value })}
                   trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor={colors.card}
+                  disabled={!hasPermission}
                 />
               </View>
             </View>
@@ -398,23 +500,38 @@ export default function AdvancedNotifications({ visible, onClose }: AdvancedNoti
           {/* Test Notification */}
           <View style={styles.section}>
             <TouchableOpacity
-              style={styles.testButton}
+              style={[styles.testButton, !hasPermission && styles.testButtonDisabled]}
+              disabled={!hasPermission}
               onPress={async () => {
-                await Notifications.scheduleNotificationAsync({
-                  content: {
-                    title: 'Test Notification',
-                    body: 'This is a test of your notification settings.',
-                    sound: true,
-                  },
-                  trigger: {
-                    seconds: 1,
-                  },
-                });
-                Alert.alert('Test Sent', 'A test notification will appear shortly');
+                if (!hasPermission) {
+                  Alert.alert('Permission Required', 'Please enable notifications first');
+                  return;
+                }
+                
+                try {
+                  await Notifications.scheduleNotificationAsync({
+                    content: {
+                      title: 'Test Notification',
+                      body: 'This is a test of your notification settings.',
+                      sound: true,
+                      categoryIdentifier: Platform.OS === 'ios' ? 'prayer-reminder' : undefined,
+                    },
+                    trigger: {
+                      seconds: 2,
+                      channelId: 'prayer-times',
+                    },
+                  });
+                  Alert.alert('Test Sent', 'A test notification will appear in 2 seconds');
+                } catch (error) {
+                  console.error('Error sending test notification:', error);
+                  Alert.alert('Error', 'Failed to send test notification');
+                }
               }}
             >
-              <IconSymbol name="bell" size={20} color={colors.card} />
-              <Text style={styles.testButtonText}>Send Test Notification</Text>
+              <IconSymbol name="bell" size={20} color={hasPermission ? colors.card : colors.textSecondary} />
+              <Text style={[styles.testButtonText, !hasPermission && styles.testButtonTextDisabled]}>
+                Send Test Notification
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -435,6 +552,41 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+  },
+  permissionBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: colors.highlight,
+    gap: 12,
+  },
+  permissionInfo: {
+    flex: 1,
+  },
+  permissionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 4,
+  },
+  permissionDescription: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  permissionButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  permissionButtonText: {
+    color: colors.card,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   section: {
     marginBottom: 24,
@@ -558,10 +710,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     gap: 8,
   },
+  testButtonDisabled: {
+    backgroundColor: colors.border,
+  },
   testButtonText: {
     color: colors.card,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  testButtonTextDisabled: {
+    color: colors.textSecondary,
   },
   // Sound Picker Styles
   soundPickerContainer: {

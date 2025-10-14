@@ -22,15 +22,6 @@ import {
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 
-// Configure notification handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
-
 export default function PrayerTimesScreen() {
   const navigation = useNavigation();
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
@@ -68,49 +59,122 @@ export default function PrayerTimesScreen() {
       console.log('🔔 Scheduling prayer notifications...');
 
       const prayers = PrayerCalculator.getPrayerTimesList(times);
+      const now = new Date();
       
       for (const prayer of prayers) {
-        const now = new Date();
+        // Only schedule future prayers
         if (prayer.time > now) {
-          await Notifications.scheduleNotificationAsync({
+          const notificationId = await Notifications.scheduleNotificationAsync({
             content: {
               title: `${prayer.name} Prayer Time`,
-              body: `It's time for ${prayer.name} prayer (${prayer.arabicName})`,
+              body: `It's time for ${prayer.name} prayer (${prayer.arabicName}). May Allah accept your prayers.`,
               sound: true,
               priority: Notifications.AndroidNotificationPriority.HIGH,
+              categoryIdentifier: Platform.OS === 'ios' ? 'prayer-reminder' : undefined,
+              data: {
+                prayer: prayer.name.toLowerCase(),
+                type: 'prayer_time',
+              },
             },
             trigger: {
               date: prayer.time,
+              channelId: 'prayer-times',
             },
           });
-          console.log(`✅ Notification scheduled for ${prayer.name} at ${prayer.time.toLocaleTimeString()}`);
+          console.log(`✅ Notification scheduled for ${prayer.name} at ${prayer.time.toLocaleTimeString()} (ID: ${notificationId})`);
+        } else {
+          console.log(`⏭️ Skipping ${prayer.name} - time has passed`);
         }
       }
+
+      // Log all scheduled notifications for debugging
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      console.log(`📋 Total scheduled notifications: ${scheduled.length}`);
+      scheduled.forEach(notif => {
+        console.log(`  - ${notif.content.title} at ${notif.trigger && 'date' in notif.trigger ? new Date(notif.trigger.date * 1000).toLocaleTimeString() : 'unknown'}`);
+      });
     } catch (error) {
-      console.error('Error scheduling notifications:', error);
+      console.error('❌ Error scheduling notifications:', error);
+      Alert.alert(
+        'Notification Error',
+        'Failed to schedule prayer notifications. Please check your notification settings.',
+        [{ text: 'OK' }]
+      );
     }
   }, []);
 
-  // Request notification permissions
+  // Request notification permissions with proper iOS handling
   const requestNotificationPermissions = useCallback(async () => {
     try {
+      console.log('🔔 Requesting notification permissions...');
+      
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      console.log(`Current permission status: ${existingStatus}`);
+      
       let finalStatus = existingStatus;
       
       if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
+        console.log('Requesting new permissions...');
+        const { status } = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+            allowAnnouncements: true,
+          },
+        });
         finalStatus = status;
+        console.log(`New permission status: ${finalStatus}`);
       }
       
       if (finalStatus === 'granted') {
         console.log('✅ Notification permissions granted');
         setNotificationPermission(true);
+
+        // Set up notification channel for Android
+        if (Platform.OS === 'android') {
+          await Notifications.setNotificationChannelAsync('prayer-times', {
+            name: 'Prayer Times',
+            importance: Notifications.AndroidImportance.HIGH,
+            vibrationPattern: [0, 250, 250, 250],
+            sound: 'default',
+            enableVibrate: true,
+            enableLights: true,
+            lightColor: '#004643',
+            lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+            bypassDnd: true,
+          });
+          console.log('✅ Android notification channel created');
+        }
+
+        return true;
       } else {
         console.log('⚠️ Notification permissions denied');
         setNotificationPermission(false);
+        
+        Alert.alert(
+          'Notifications Disabled',
+          Platform.OS === 'ios' 
+            ? 'To receive prayer time reminders, please enable notifications in Settings > Notifications > Prayer Times.'
+            : 'To receive prayer time reminders, please enable notifications in your device settings.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { 
+              text: 'Open Settings', 
+              onPress: () => {
+                if (Platform.OS === 'ios') {
+                  Notifications.openSettingsAsync();
+                }
+              }
+            },
+          ]
+        );
+        return false;
       }
     } catch (error) {
-      console.error('Error requesting notification permissions:', error);
+      console.error('❌ Error requesting notification permissions:', error);
+      setNotificationPermission(false);
+      return false;
     }
   }, []);
 
@@ -151,12 +215,12 @@ export default function PrayerTimesScreen() {
       console.log('🕌 Prayer times calculated:', times);
       setPrayerTimes(times);
 
-      // Schedule notifications for prayer times
+      // Schedule notifications for prayer times if permission granted
       if (notificationPermission) {
         await schedulePrayerNotifications(times);
       }
     } catch (error) {
-      console.error('Error getting location or calculating prayer times:', error);
+      console.error('❌ Error getting location or calculating prayer times:', error);
       setLocationError('Unable to get your location. Please check your device settings.');
       Alert.alert(
         'Error',
@@ -171,9 +235,21 @@ export default function PrayerTimesScreen() {
 
   // Initialize on mount
   useEffect(() => {
-    requestNotificationPermissions();
-    requestLocationAndLoadPrayerTimes();
-  }, [requestNotificationPermissions, requestLocationAndLoadPrayerTimes]);
+    const initialize = async () => {
+      const hasPermission = await requestNotificationPermissions();
+      await requestLocationAndLoadPrayerTimes();
+    };
+    
+    initialize();
+  }, []);
+
+  // Re-schedule notifications when permission is granted
+  useEffect(() => {
+    if (notificationPermission && prayerTimes) {
+      console.log('🔄 Permission granted, scheduling notifications...');
+      schedulePrayerNotifications(prayerTimes);
+    }
+  }, [notificationPermission, prayerTimes, schedulePrayerNotifications]);
 
   // Update current time every minute
   useEffect(() => {
@@ -232,6 +308,13 @@ export default function PrayerTimesScreen() {
     const now = new Date();
     return now > prayerTimes.isha.time;
   }, [prayerTimes]);
+
+  const handleEnableNotifications = useCallback(async () => {
+    const hasPermission = await requestNotificationPermissions();
+    if (hasPermission && prayerTimes) {
+      await schedulePrayerNotifications(prayerTimes);
+    }
+  }, [requestNotificationPermissions, prayerTimes, schedulePrayerNotifications]);
 
   if (loading && !prayerTimes) {
     return (
@@ -309,6 +392,20 @@ export default function PrayerTimesScreen() {
             <View style={styles.notificationWarningContainer}>
               <Text style={styles.notificationWarning}>
                 ⚠️ Enable notifications to receive prayer reminders
+              </Text>
+              <TouchableOpacity 
+                style={styles.enableButton}
+                onPress={handleEnableNotifications}
+              >
+                <Text style={styles.enableButtonText}>Enable Notifications</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {notificationPermission && (
+            <View style={styles.notificationSuccessContainer}>
+              <Text style={styles.notificationSuccess}>
+                ✅ Prayer notifications enabled
               </Text>
             </View>
           )}
@@ -504,10 +601,36 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: colors.border,
+    alignItems: 'center',
   },
   notificationWarning: {
     fontSize: 12,
     color: colors.highlight,
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  enableButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 4,
+  },
+  enableButtonText: {
+    color: colors.card,
+    fontSize: 13,
+    fontWeight: 'bold',
+  },
+  notificationSuccessContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  notificationSuccess: {
+    fontSize: 12,
+    color: colors.primary,
     textAlign: 'center',
     fontWeight: '600',
   },

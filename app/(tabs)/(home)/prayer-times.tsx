@@ -4,6 +4,7 @@ import NavigationHeader from '@/components/NavigationHeader';
 import QuoteDisplay from '@/components/QuoteDisplay';
 import PrayerTimeItem from '@/components/PrayerTimeItem';
 import * as Location from 'expo-location';
+import * as Linking from 'expo-linking';
 import { PrayerCalculator, PrayerTimesData, PrayerTime } from '@/utils/prayerTimes';
 import { colors } from '@/styles/commonStyles';
 import { Stack, useNavigation } from 'expo-router';
@@ -161,11 +162,7 @@ export default function PrayerTimesScreen() {
             { text: 'Cancel', style: 'cancel' },
             { 
               text: 'Open Settings', 
-              onPress: () => {
-                if (Platform.OS === 'ios') {
-                  Notifications.openSettingsAsync();
-                }
-              }
+              onPress: () => Linking.openSettings()
             },
           ]
         );
@@ -241,7 +238,7 @@ export default function PrayerTimesScreen() {
     };
     
     initialize();
-  }, []);
+  }, [requestNotificationPermissions, requestLocationAndLoadPrayerTimes]);
 
   // Re-schedule notifications when permission is granted
   useEffect(() => {
@@ -258,7 +255,7 @@ export default function PrayerTimesScreen() {
     }, 60000); // Update every minute
 
     return () => clearInterval(timer);
-  }, [currentTime]);
+  }, []);
 
   // Recalculate next prayer when time changes (but only update if needed)
   useEffect(() => {

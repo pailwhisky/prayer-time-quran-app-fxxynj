@@ -19,6 +19,8 @@ export function useCloseButton() {
           onPress={() => navigation.goBack()}
           style={{ marginRight: 12, padding: 4 }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="Close"
+          accessibilityRole="button"
         >
           <Ionicons name="close" size={24} color="#333" />
         </TouchableOpacity>

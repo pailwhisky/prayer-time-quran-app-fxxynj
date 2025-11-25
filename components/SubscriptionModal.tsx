@@ -59,10 +59,42 @@ export default function SubscriptionModal({
     }
   };
 
+  const getFeatureIcon = (feature: string) => {
+    const iconMap: { [key: string]: string } = {
+      'lifetime_access': 'infinity',
+      'all_premium_features': 'star',
+      'all_ultra_features': 'sparkles',
+      'priority_support': 'headphones',
+      'early_access_to_new_features': 'rocket',
+      'exclusive_content': 'lock-open',
+      'ad_free_forever': 'eye-off',
+      'unlimited_ai_queries': 'cpu',
+      'custom_prayer_reminders': 'bell',
+      'advanced_analytics': 'trending-up',
+      'personalized_learning_path': 'book-open',
+      'exclusive_community_access': 'users',
+      'one_on_one_spiritual_guidance': 'user-check',
+      'custom_app_themes': 'palette',
+      'offline_quran_audio': 'download',
+      'advanced_memorization_tools': 'brain',
+      'advanced_notifications': 'bell',
+      'mosque_finder': 'map-pin',
+      'hijri_calendar': 'calendar',
+      'ai_assistant': 'message-circle',
+      'daily_hadith': 'book',
+      'enhanced_quotes': 'quote',
+      'prayer_times': 'clock',
+      'quran_reader': 'book-open',
+      'qibla_compass': 'compass',
+    };
+    return iconMap[feature] || 'check';
+  };
+
   const renderTierCard = (tier: any) => {
     const isCurrentTier = tier.name === currentTier;
     const isSelected = tier.name === selectedTier;
     const isLifetimeTier = tier.price_lifetime !== null && tier.price_monthly === null && tier.price_yearly === null;
+    const isSuperUltra = tier.name === 'super_ultra';
     
     let price = 0;
     let priceLabel = '';
@@ -87,22 +119,27 @@ export default function SubscriptionModal({
           isSelected && styles.tierCardSelected,
           isCurrentTier && styles.tierCardCurrent,
           isLifetimeTier && styles.tierCardLifetime,
+          isSuperUltra && styles.tierCardSuperUltra,
         ]}
         onPress={() => !isCurrentTier && setSelectedTier(tier.name)}
         disabled={isCurrentTier}
       >
         {isLifetimeTier && (
-          <View style={styles.lifetimeBanner}>
+          <View style={[styles.lifetimeBanner, isSuperUltra && styles.lifetimeBannerSuperUltra]}>
             <IconSymbol name="star" size={16} color={colors.card} />
-            <Text style={styles.lifetimeBannerText}>LIFETIME ACCESS</Text>
+            <Text style={styles.lifetimeBannerText}>
+              {isSuperUltra ? '✨ ULTIMATE LIFETIME ACCESS ✨' : 'LIFETIME ACCESS'}
+            </Text>
             <IconSymbol name="star" size={16} color={colors.card} />
           </View>
         )}
         
         <View style={styles.tierHeader}>
           <View>
-            <Text style={styles.tierName}>{tier.display_name}</Text>
-            <Text style={[styles.tierPrice, isLifetimeTier && styles.tierPriceLifetime]}>
+            <Text style={[styles.tierName, isSuperUltra && styles.tierNameSuperUltra]}>
+              {tier.display_name}
+            </Text>
+            <Text style={[styles.tierPrice, isLifetimeTier && styles.tierPriceLifetime, isSuperUltra && styles.tierPriceSuperUltra]}>
               ${price.toFixed(2)}
               <Text style={styles.tierPriceLabel}>{priceLabel}</Text>
             </Text>
@@ -113,19 +150,51 @@ export default function SubscriptionModal({
             </View>
           )}
           {isSelected && !isCurrentTier && (
-            <IconSymbol name="check-circle" size={24} color={colors.primary} />
+            <IconSymbol name="check-circle" size={24} color={isSuperUltra ? colors.highlight : colors.primary} />
           )}
         </View>
 
-        <Text style={styles.tierDescription}>{tier.description}</Text>
+        <Text style={[styles.tierDescription, isSuperUltra && styles.tierDescriptionSuperUltra]}>
+          {tier.description}
+        </Text>
+
+        {isSuperUltra && (
+          <View style={styles.exclusiveBadge}>
+            <IconSymbol name="award" size={16} color={colors.highlight} />
+            <Text style={styles.exclusiveBadgeText}>8 Exclusive Features Not Available in Other Tiers</Text>
+          </View>
+        )}
 
         <View style={styles.featuresContainer}>
-          {tier.features.map((feature: string, index: number) => (
-            <View key={index} style={styles.featureItem}>
-              <IconSymbol name="check" size={16} color={isLifetimeTier ? colors.highlight : colors.primary} />
-              <Text style={styles.featureText}>{feature.replace(/_/g, ' ')}</Text>
-            </View>
-          ))}
+          {tier.features.map((feature: string, index: number) => {
+            const isExclusiveFeature = [
+              'custom_prayer_reminders',
+              'advanced_analytics',
+              'personalized_learning_path',
+              'exclusive_community_access',
+              'one_on_one_spiritual_guidance',
+              'custom_app_themes',
+              'offline_quran_audio',
+              'advanced_memorization_tools'
+            ].includes(feature);
+
+            return (
+              <View key={index} style={styles.featureItem}>
+                <IconSymbol 
+                  name={getFeatureIcon(feature)} 
+                  size={16} 
+                  color={isSuperUltra && isExclusiveFeature ? colors.highlight : isLifetimeTier ? colors.highlight : colors.primary} 
+                />
+                <Text style={[
+                  styles.featureText,
+                  isSuperUltra && isExclusiveFeature && styles.featureTextExclusive
+                ]}>
+                  {feature.replace(/_/g, ' ')}
+                  {isSuperUltra && isExclusiveFeature && ' ⭐'}
+                </Text>
+              </View>
+            );
+          })}
         </View>
       </TouchableOpacity>
     );
@@ -136,6 +205,7 @@ export default function SubscriptionModal({
   const isLifetimeSelected = selectedTierData?.price_lifetime !== null && 
                              selectedTierData?.price_monthly === null && 
                              selectedTierData?.price_yearly === null;
+  const isSuperUltraSelected = selectedTier === 'super_ultra';
 
   return (
     <Modal
@@ -211,33 +281,59 @@ export default function SubscriptionModal({
             tiers.map(renderTierCard)
           )}
 
-          <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>What you get:</Text>
+          <View style={[styles.infoSection, isSuperUltraSelected && styles.infoSectionSuperUltra]}>
+            <Text style={styles.infoTitle}>
+              {isSuperUltraSelected ? '✨ Super Ultra Benefits:' : 'What you get:'}
+            </Text>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
               <Text style={styles.infoText}>
                 {isLifetimeSelected ? 'One-time payment, lifetime access' : 'Cancel anytime, no questions asked'}
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
               <Text style={styles.infoText}>Instant access to all features</Text>
             </View>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
               <Text style={styles.infoText}>Regular updates and new features</Text>
             </View>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
               <Text style={styles.infoText}>Support the development of Islamic apps</Text>
             </View>
             {isLifetimeSelected && (
-              <View style={styles.infoItem}>
-                <IconSymbol name="check-circle" size={20} color={colors.highlight} />
-                <Text style={[styles.infoText, styles.infoTextHighlight]}>
-                  Priority support & early access to new features
-                </Text>
-              </View>
+              <>
+                <View style={styles.infoItem}>
+                  <IconSymbol name="check-circle" size={20} color={colors.highlight} />
+                  <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                    Priority support & early access to new features
+                  </Text>
+                </View>
+                {isSuperUltraSelected && (
+                  <>
+                    <View style={styles.infoItem}>
+                      <IconSymbol name="star" size={20} color={colors.highlight} />
+                      <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                        Monthly virtual sessions with Islamic scholars
+                      </Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <IconSymbol name="star" size={20} color={colors.highlight} />
+                      <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                        Exclusive community of dedicated Muslims
+                      </Text>
+                    </View>
+                    <View style={styles.infoItem}>
+                      <IconSymbol name="star" size={20} color={colors.highlight} />
+                      <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                        Advanced AI-powered learning & memorization
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </>
             )}
           </View>
         </ScrollView>
@@ -249,6 +345,7 @@ export default function SubscriptionModal({
                 styles.upgradeButton,
                 upgrading && styles.upgradeButtonDisabled,
                 isLifetimeSelected && styles.upgradeButtonLifetime,
+                isSuperUltraSelected && styles.upgradeButtonSuperUltra,
               ]}
               onPress={handleUpgrade}
               disabled={upgrading}
@@ -369,6 +466,11 @@ const styles = StyleSheet.create({
     borderColor: colors.highlight,
     backgroundColor: colors.highlight + '10',
   },
+  tierCardSuperUltra: {
+    borderColor: colors.highlight,
+    backgroundColor: colors.highlight + '15',
+    borderWidth: 3,
+  },
   lifetimeBanner: {
     position: 'absolute',
     top: 0,
@@ -381,6 +483,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     marginBottom: 12,
+  },
+  lifetimeBannerSuperUltra: {
+    backgroundColor: colors.highlight,
+    paddingVertical: 10,
   },
   lifetimeBannerText: {
     fontSize: 12,
@@ -401,12 +507,20 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
+  tierNameSuperUltra: {
+    fontSize: 26,
+    color: colors.highlight,
+  },
   tierPrice: {
     fontSize: 32,
     fontWeight: 'bold',
     color: colors.primary,
   },
   tierPriceLifetime: {
+    color: colors.highlight,
+  },
+  tierPriceSuperUltra: {
+    fontSize: 36,
     color: colors.highlight,
   },
   tierPriceLabel: {
@@ -430,6 +544,27 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 22,
   },
+  tierDescriptionSuperUltra: {
+    fontSize: 17,
+    fontWeight: '500',
+    color: colors.text,
+  },
+  exclusiveBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.highlight + '20',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  exclusiveBadgeText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.highlight,
+  },
   featuresContainer: {
     gap: 8,
   },
@@ -445,6 +580,10 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textTransform: 'capitalize',
   },
+  featureTextExclusive: {
+    fontWeight: '600',
+    color: colors.highlight,
+  },
   infoSection: {
     backgroundColor: colors.card,
     borderRadius: 12,
@@ -452,6 +591,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  infoSectionSuperUltra: {
+    backgroundColor: colors.highlight + '10',
+    borderColor: colors.highlight,
+    borderWidth: 2,
   },
   infoTitle: {
     fontSize: 18,
@@ -495,6 +639,10 @@ const styles = StyleSheet.create({
   },
   upgradeButtonLifetime: {
     backgroundColor: colors.highlight,
+  },
+  upgradeButtonSuperUltra: {
+    backgroundColor: colors.highlight,
+    paddingVertical: 18,
   },
   upgradeButtonText: {
     fontSize: 18,

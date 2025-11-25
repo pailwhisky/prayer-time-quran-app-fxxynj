@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,9 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useSubscription, SubscriptionTier } from '@/contexts/SubscriptionContext';
@@ -31,6 +33,44 @@ export default function SubscriptionModal({
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier>('premium');
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly' | 'lifetime'>('monthly');
   const [upgrading, setUpgrading] = useState(false);
+  
+  // Animation values for Super Ultra shimmer effect
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    // Shimmer animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmerAnim, {
+          toValue: 1,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmerAnim, {
+          toValue: 0,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+
+    // Pulse animation
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.05,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
 
   const handleUpgrade = async () => {
     try {
@@ -108,99 +148,161 @@ export default function SubscriptionModal({
     }
 
     if (tier.name === 'free') {
-      return null; // Don't show free tier in upgrade modal
+      return null;
     }
 
+    const shimmerOpacity = shimmerAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 1],
+    });
+
     return (
-      <TouchableOpacity
+      <Animated.View
         key={tier.id}
         style={[
-          styles.tierCard,
-          isSelected && styles.tierCardSelected,
-          isCurrentTier && styles.tierCardCurrent,
-          isLifetimeTier && styles.tierCardLifetime,
-          isSuperUltra && styles.tierCardSuperUltra,
+          isSuperUltra && { transform: [{ scale: pulseAnim }] }
         ]}
-        onPress={() => !isCurrentTier && setSelectedTier(tier.name)}
-        disabled={isCurrentTier}
       >
-        {isLifetimeTier && (
-          <View style={[styles.lifetimeBanner, isSuperUltra && styles.lifetimeBannerSuperUltra]}>
-            <IconSymbol name="star" size={16} color={colors.card} />
-            <Text style={styles.lifetimeBannerText}>
-              {isSuperUltra ? '✨ ULTIMATE LIFETIME ACCESS ✨' : 'LIFETIME ACCESS'}
-            </Text>
-            <IconSymbol name="star" size={16} color={colors.card} />
-          </View>
-        )}
-        
-        <View style={styles.tierHeader}>
-          <View>
-            <Text style={[styles.tierName, isSuperUltra && styles.tierNameSuperUltra]}>
-              {tier.display_name}
-            </Text>
-            <Text style={[styles.tierPrice, isLifetimeTier && styles.tierPriceLifetime, isSuperUltra && styles.tierPriceSuperUltra]}>
-              ${price.toFixed(2)}
-              <Text style={styles.tierPriceLabel}>{priceLabel}</Text>
-            </Text>
-          </View>
-          {isCurrentTier && (
-            <View style={styles.currentBadge}>
-              <Text style={styles.currentBadgeText}>Current</Text>
+        <TouchableOpacity
+          style={[
+            styles.tierCard,
+            isSelected && styles.tierCardSelected,
+            isCurrentTier && styles.tierCardCurrent,
+            isLifetimeTier && styles.tierCardLifetime,
+            isSuperUltra && styles.tierCardSuperUltra,
+          ]}
+          onPress={() => !isCurrentTier && setSelectedTier(tier.name)}
+          disabled={isCurrentTier}
+        >
+          {isSuperUltra && (
+            <>
+              {/* Gold shimmer overlay */}
+              <Animated.View 
+                style={[
+                  styles.goldShimmerOverlay,
+                  { opacity: shimmerOpacity }
+                ]}
+              />
+              
+              {/* Decorative gold corners */}
+              <View style={styles.goldCornerTopLeft} />
+              <View style={styles.goldCornerTopRight} />
+              <View style={styles.goldCornerBottomLeft} />
+              <View style={styles.goldCornerBottomRight} />
+            </>
+          )}
+
+          {isLifetimeTier && (
+            <LinearGradient
+              colors={
+                isSuperUltra 
+                  ? [colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark]
+                  : [colors.highlight, colors.highlight + 'DD', colors.highlight]
+              }
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={[styles.lifetimeBanner, isSuperUltra && styles.lifetimeBannerSuperUltra]}
+            >
+              <IconSymbol name="star" size={16} color={isSuperUltra ? colors.superUltraGoldDeep : colors.card} />
+              <Text style={[styles.lifetimeBannerText, isSuperUltra && styles.lifetimeBannerTextSuperUltra]}>
+                {isSuperUltra ? '✨ ULTIMATE LIFETIME ACCESS ✨' : 'LIFETIME ACCESS'}
+              </Text>
+              <IconSymbol name="star" size={16} color={isSuperUltra ? colors.superUltraGoldDeep : colors.card} />
+            </LinearGradient>
+          )}
+          
+          <View style={styles.tierHeader}>
+            <View>
+              <Text style={[styles.tierName, isSuperUltra && styles.tierNameSuperUltra]}>
+                {isSuperUltra && '👑 '}
+                {tier.display_name}
+                {isSuperUltra && ' 👑'}
+              </Text>
+              <Text style={[styles.tierPrice, isLifetimeTier && styles.tierPriceLifetime, isSuperUltra && styles.tierPriceSuperUltra]}>
+                ${price.toFixed(2)}
+                <Text style={styles.tierPriceLabel}>{priceLabel}</Text>
+              </Text>
             </View>
-          )}
-          {isSelected && !isCurrentTier && (
-            <IconSymbol name="check-circle" size={24} color={isSuperUltra ? colors.highlight : colors.primary} />
-          )}
-        </View>
-
-        <Text style={[styles.tierDescription, isSuperUltra && styles.tierDescriptionSuperUltra]}>
-          {tier.description}
-        </Text>
-
-        {isSuperUltra && (
-          <View style={styles.exclusiveBadge}>
-            <IconSymbol name="award" size={16} color={colors.highlight} />
-            <Text style={styles.exclusiveBadgeText}>8 Exclusive Features Not Available in Other Tiers</Text>
-          </View>
-        )}
-
-        <View style={styles.featuresContainer}>
-          {tier.features.map((feature: string, index: number) => {
-            const isExclusiveFeature = [
-              'custom_prayer_reminders',
-              'advanced_analytics',
-              'personalized_learning_path',
-              'exclusive_community_access',
-              'one_on_one_spiritual_guidance',
-              'custom_app_themes',
-              'offline_quran_audio',
-              'advanced_memorization_tools'
-            ].includes(feature);
-
-            return (
-              <View key={index} style={styles.featureItem}>
-                <IconSymbol 
-                  name={getFeatureIcon(feature)} 
-                  size={16} 
-                  color={isSuperUltra && isExclusiveFeature ? colors.highlight : isLifetimeTier ? colors.highlight : colors.primary} 
-                />
-                <Text style={[
-                  styles.featureText,
-                  isSuperUltra && isExclusiveFeature && styles.featureTextExclusive
-                ]}>
-                  {feature.replace(/_/g, ' ')}
-                  {isSuperUltra && isExclusiveFeature && ' ⭐'}
-                </Text>
+            {isCurrentTier && (
+              <View style={[styles.currentBadge, isSuperUltra && styles.currentBadgeSuperUltra]}>
+                <Text style={styles.currentBadgeText}>Current</Text>
               </View>
-            );
-          })}
-        </View>
-      </TouchableOpacity>
+            )}
+            {isSelected && !isCurrentTier && (
+              <IconSymbol 
+                name="check-circle" 
+                size={24} 
+                color={isSuperUltra ? colors.superUltraGold : colors.primary} 
+              />
+            )}
+          </View>
+
+          <Text style={[styles.tierDescription, isSuperUltra && styles.tierDescriptionSuperUltra]}>
+            {tier.description}
+          </Text>
+
+          {isSuperUltra && (
+            <LinearGradient
+              colors={[colors.superUltraGoldLight, colors.superUltraGoldPale]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.exclusiveBadge}
+            >
+              <IconSymbol name="award" size={16} color={colors.superUltraGoldDeep} />
+              <Text style={styles.exclusiveBadgeText}>
+                8 Exclusive Features Not Available in Other Tiers
+              </Text>
+            </LinearGradient>
+          )}
+
+          <View style={styles.featuresContainer}>
+            {tier.features.map((feature: string, index: number) => {
+              const isExclusiveFeature = [
+                'custom_prayer_reminders',
+                'advanced_analytics',
+                'personalized_learning_path',
+                'exclusive_community_access',
+                'one_on_one_spiritual_guidance',
+                'custom_app_themes',
+                'offline_quran_audio',
+                'advanced_memorization_tools'
+              ].includes(feature);
+
+              return (
+                <View 
+                  key={index} 
+                  style={[
+                    styles.featureItem,
+                    isSuperUltra && isExclusiveFeature && styles.featureItemSuperUltra
+                  ]}
+                >
+                  <IconSymbol 
+                    name={getFeatureIcon(feature)} 
+                    size={16} 
+                    color={
+                      isSuperUltra && isExclusiveFeature 
+                        ? colors.superUltraGold 
+                        : isLifetimeTier 
+                          ? colors.highlight 
+                          : colors.primary
+                    } 
+                  />
+                  <Text style={[
+                    styles.featureText,
+                    isSuperUltra && isExclusiveFeature && styles.featureTextExclusive
+                  ]}>
+                    {feature.replace(/_/g, ' ')}
+                    {isSuperUltra && isExclusiveFeature && ' ⭐'}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </TouchableOpacity>
+      </Animated.View>
     );
   };
 
-  // Check if selected tier is lifetime
   const selectedTierData = tiers.find(t => t.name === selectedTier);
   const isLifetimeSelected = selectedTierData?.price_lifetime !== null && 
                              selectedTierData?.price_monthly === null && 
@@ -282,31 +384,51 @@ export default function SubscriptionModal({
           )}
 
           <View style={[styles.infoSection, isSuperUltraSelected && styles.infoSectionSuperUltra]}>
-            <Text style={styles.infoTitle}>
+            <Text style={[styles.infoTitle, isSuperUltraSelected && styles.infoTitleSuperUltra]}>
               {isSuperUltraSelected ? '✨ Super Ultra Benefits:' : 'What you get:'}
             </Text>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
+              <IconSymbol 
+                name="check-circle" 
+                size={20} 
+                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
+              />
               <Text style={styles.infoText}>
                 {isLifetimeSelected ? 'One-time payment, lifetime access' : 'Cancel anytime, no questions asked'}
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
+              <IconSymbol 
+                name="check-circle" 
+                size={20} 
+                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
+              />
               <Text style={styles.infoText}>Instant access to all features</Text>
             </View>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
+              <IconSymbol 
+                name="check-circle" 
+                size={20} 
+                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
+              />
               <Text style={styles.infoText}>Regular updates and new features</Text>
             </View>
             <View style={styles.infoItem}>
-              <IconSymbol name="check-circle" size={20} color={isSuperUltraSelected ? colors.highlight : colors.primary} />
+              <IconSymbol 
+                name="check-circle" 
+                size={20} 
+                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
+              />
               <Text style={styles.infoText}>Support the development of Islamic apps</Text>
             </View>
             {isLifetimeSelected && (
               <>
                 <View style={styles.infoItem}>
-                  <IconSymbol name="check-circle" size={20} color={colors.highlight} />
+                  <IconSymbol 
+                    name="check-circle" 
+                    size={20} 
+                    color={isSuperUltraSelected ? colors.superUltraGold : colors.highlight} 
+                  />
                   <Text style={[styles.infoText, styles.infoTextHighlight]}>
                     Priority support & early access to new features
                   </Text>
@@ -314,20 +436,20 @@ export default function SubscriptionModal({
                 {isSuperUltraSelected && (
                   <>
                     <View style={styles.infoItem}>
-                      <IconSymbol name="star" size={20} color={colors.highlight} />
-                      <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                      <IconSymbol name="star" size={20} color={colors.superUltraGold} />
+                      <Text style={[styles.infoText, styles.infoTextSuperUltra]}>
                         Monthly virtual sessions with Islamic scholars
                       </Text>
                     </View>
                     <View style={styles.infoItem}>
-                      <IconSymbol name="star" size={20} color={colors.highlight} />
-                      <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                      <IconSymbol name="star" size={20} color={colors.superUltraGold} />
+                      <Text style={[styles.infoText, styles.infoTextSuperUltra]}>
                         Exclusive community of dedicated Muslims
                       </Text>
                     </View>
                     <View style={styles.infoItem}>
-                      <IconSymbol name="star" size={20} color={colors.highlight} />
-                      <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                      <IconSymbol name="star" size={20} color={colors.superUltraGold} />
+                      <Text style={[styles.infoText, styles.infoTextSuperUltra]}>
                         Advanced AI-powered learning & memorization
                       </Text>
                     </View>
@@ -345,20 +467,42 @@ export default function SubscriptionModal({
                 styles.upgradeButton,
                 upgrading && styles.upgradeButtonDisabled,
                 isLifetimeSelected && styles.upgradeButtonLifetime,
-                isSuperUltraSelected && styles.upgradeButtonSuperUltra,
               ]}
               onPress={handleUpgrade}
               disabled={upgrading}
             >
-              {upgrading ? (
-                <ActivityIndicator color={colors.card} />
+              {isSuperUltraSelected ? (
+                <LinearGradient
+                  colors={[colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.upgradeButtonGradient}
+                >
+                  {upgrading ? (
+                    <ActivityIndicator color={colors.superUltraGoldDeep} />
+                  ) : (
+                    <>
+                      <IconSymbol name="crown" size={20} color={colors.superUltraGoldDeep} />
+                      <Text style={styles.upgradeButtonTextSuperUltra}>
+                        Get Ultimate Lifetime Access
+                      </Text>
+                      <IconSymbol name="star" size={20} color={colors.superUltraGoldDeep} />
+                    </>
+                  )}
+                </LinearGradient>
               ) : (
                 <>
-                  <Text style={styles.upgradeButtonText}>
-                    {isLifetimeSelected ? 'Get Lifetime Access' : `Upgrade to ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1).replace('_', ' ')}`}
-                  </Text>
-                  {isLifetimeSelected && (
-                    <IconSymbol name="star" size={20} color={colors.card} />
+                  {upgrading ? (
+                    <ActivityIndicator color={colors.card} />
+                  ) : (
+                    <>
+                      <Text style={styles.upgradeButtonText}>
+                        {isLifetimeSelected ? 'Get Lifetime Access' : `Upgrade to ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1).replace('_', ' ')}`}
+                      </Text>
+                      {isLifetimeSelected && (
+                        <IconSymbol name="star" size={20} color={colors.card} />
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -453,6 +597,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.border,
     overflow: 'hidden',
+    position: 'relative',
   },
   tierCardSelected: {
     borderColor: colors.primary,
@@ -467,16 +612,70 @@ const styles = StyleSheet.create({
     backgroundColor: colors.highlight + '10',
   },
   tierCardSuperUltra: {
-    borderColor: colors.highlight,
-    backgroundColor: colors.highlight + '15',
+    borderColor: colors.superUltraGold,
+    backgroundColor: colors.superUltraGoldPale,
     borderWidth: 3,
+    boxShadow: `0px 8px 24px ${colors.superUltraGold}80, 0px 0px 40px ${colors.superUltraGoldShine}40`,
+    elevation: 12,
+  },
+  goldShimmerOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.superUltraGoldShine,
+    opacity: 0.1,
+  },
+  goldCornerTopLeft: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: colors.superUltraGold,
+    borderTopLeftRadius: 16,
+  },
+  goldCornerTopRight: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderTopWidth: 4,
+    borderRightWidth: 4,
+    borderColor: colors.superUltraGold,
+    borderTopRightRadius: 16,
+  },
+  goldCornerBottomLeft: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderLeftWidth: 4,
+    borderColor: colors.superUltraGold,
+    borderBottomLeftRadius: 16,
+  },
+  goldCornerBottomRight: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderBottomWidth: 4,
+    borderRightWidth: 4,
+    borderColor: colors.superUltraGold,
+    borderBottomRightRadius: 16,
   },
   lifetimeBanner: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.highlight,
     paddingVertical: 8,
     flexDirection: 'row',
     justifyContent: 'center',
@@ -485,14 +684,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   lifetimeBannerSuperUltra: {
-    backgroundColor: colors.highlight,
-    paddingVertical: 10,
+    paddingVertical: 12,
+    boxShadow: `0px 4px 12px ${colors.superUltraGold}60`,
   },
   lifetimeBannerText: {
     fontSize: 12,
     fontWeight: 'bold',
     color: colors.card,
     letterSpacing: 1,
+  },
+  lifetimeBannerTextSuperUltra: {
+    fontSize: 13,
+    color: colors.superUltraGoldDeep,
+    textShadow: `0px 1px 2px ${colors.superUltraGoldShine}`,
   },
   tierHeader: {
     flexDirection: 'row',
@@ -508,8 +712,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   tierNameSuperUltra: {
-    fontSize: 26,
-    color: colors.highlight,
+    fontSize: 28,
+    color: colors.superUltraGoldDeep,
+    textShadow: `0px 2px 4px ${colors.superUltraGold}60`,
   },
   tierPrice: {
     fontSize: 32,
@@ -520,8 +725,9 @@ const styles = StyleSheet.create({
     color: colors.highlight,
   },
   tierPriceSuperUltra: {
-    fontSize: 36,
-    color: colors.highlight,
+    fontSize: 38,
+    color: colors.superUltraGold,
+    textShadow: `0px 2px 4px ${colors.superUltraGoldDark}40`,
   },
   tierPriceLabel: {
     fontSize: 16,
@@ -532,6 +738,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 12,
+  },
+  currentBadgeSuperUltra: {
+    backgroundColor: colors.superUltraGold,
   },
   currentBadgeText: {
     fontSize: 12,
@@ -546,32 +755,42 @@ const styles = StyleSheet.create({
   },
   tierDescriptionSuperUltra: {
     fontSize: 17,
-    fontWeight: '500',
-    color: colors.text,
+    fontWeight: '600',
+    color: colors.superUltraGoldDeep,
   },
   exclusiveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.highlight + '20',
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderRadius: 10,
     marginBottom: 16,
     gap: 8,
+    borderWidth: 2,
+    borderColor: colors.superUltraGold,
   },
   exclusiveBadgeText: {
     flex: 1,
     fontSize: 13,
-    fontWeight: '600',
-    color: colors.highlight,
+    fontWeight: '700',
+    color: colors.superUltraGoldDeep,
   },
   featuresContainer: {
-    gap: 8,
+    gap: 10,
   },
   featureItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 10,
+    paddingVertical: 4,
+  },
+  featureItemSuperUltra: {
+    backgroundColor: colors.superUltraGoldLight,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.superUltraGold,
   },
   featureText: {
     flex: 1,
@@ -581,8 +800,8 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   featureTextExclusive: {
-    fontWeight: '600',
-    color: colors.highlight,
+    fontWeight: '700',
+    color: colors.superUltraGoldDeep,
   },
   infoSection: {
     backgroundColor: colors.card,
@@ -593,15 +812,20 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   infoSectionSuperUltra: {
-    backgroundColor: colors.highlight + '10',
-    borderColor: colors.highlight,
-    borderWidth: 2,
+    backgroundColor: colors.superUltraGoldPale,
+    borderColor: colors.superUltraGold,
+    borderWidth: 3,
+    boxShadow: `0px 4px 16px ${colors.superUltraGold}40`,
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 16,
+  },
+  infoTitleSuperUltra: {
+    fontSize: 20,
+    color: colors.superUltraGoldDeep,
   },
   infoItem: {
     flexDirection: 'row',
@@ -619,6 +843,10 @@ const styles = StyleSheet.create({
     color: colors.highlight,
     fontWeight: '600',
   },
+  infoTextSuperUltra: {
+    color: colors.superUltraGoldDeep,
+    fontWeight: '700',
+  },
   footer: {
     padding: 20,
     paddingBottom: 40,
@@ -633,6 +861,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
+    overflow: 'hidden',
   },
   upgradeButtonDisabled: {
     opacity: 0.6,
@@ -640,13 +869,24 @@ const styles = StyleSheet.create({
   upgradeButtonLifetime: {
     backgroundColor: colors.highlight,
   },
-  upgradeButtonSuperUltra: {
-    backgroundColor: colors.highlight,
+  upgradeButtonGradient: {
+    width: '100%',
     paddingVertical: 18,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
   upgradeButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.card,
+  },
+  upgradeButtonTextSuperUltra: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.superUltraGoldDeep,
+    textShadow: `0px 1px 2px ${colors.superUltraGoldShine}`,
   },
 });

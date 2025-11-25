@@ -17,6 +17,18 @@ export const colors = {
   quranGreen: '#006B5F',      // Quran Green for better visibility
   ornamental: '#8B7355',      // Ornamental Brown
   lightGold: '#F4E4C1',       // Light Gold Background
+  
+  // Super Ultra Gold Theme
+  superUltraGold: '#FFD700',        // Bright Gold
+  superUltraGoldDark: '#DAA520',    // Goldenrod
+  superUltraGoldLight: '#FFF8DC',   // Cornsilk
+  superUltraGoldShine: '#FFED4E',   // Shining Gold
+  superUltraGoldDeep: '#B8860B',    // Dark Goldenrod
+  superUltraGoldAccent: '#FFA500',  // Orange Gold
+  superUltraGoldPale: '#FFFACD',    // Lemon Chiffon
+  superUltraGoldRich: '#CFB53B',    // Old Gold
+  superUltraGoldBronze: '#CD7F32',  // Bronze
+  superUltraGoldRose: '#B76E79',    // Rose Gold
 };
 
 export const buttonStyles = StyleSheet.create({
@@ -108,5 +120,26 @@ export const commonStyles = StyleSheet.create({
   arabicText: {
     fontWeight: '600',
     letterSpacing: 1,
+  },
+  // Super Ultra Gold Styles
+  superUltraCard: {
+    backgroundColor: colors.superUltraGoldPale,
+    borderColor: colors.superUltraGold,
+    borderWidth: 3,
+    borderRadius: 16,
+    padding: 20,
+    boxShadow: `0px 8px 24px ${colors.superUltraGold}60`,
+    elevation: 8,
+  },
+  superUltraGradient: {
+    background: `linear-gradient(135deg, ${colors.superUltraGoldLight} 0%, ${colors.superUltraGold} 50%, ${colors.superUltraGoldDark} 100%)`,
+  },
+  superUltraText: {
+    color: colors.superUltraGoldDeep,
+    fontWeight: 'bold',
+    textShadow: `0px 1px 2px ${colors.superUltraGold}40`,
+  },
+  superUltraShine: {
+    boxShadow: `0px 0px 20px ${colors.superUltraGoldShine}80, 0px 0px 40px ${colors.superUltraGold}40`,
   },
 });

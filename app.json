@@ -1,3 +1,4 @@
+
 {
   "expo": {
     "name": "My Prayer",
@@ -24,7 +25,10 @@
         "NSRemindersUsageDescription": "We need access to reminders to notify you of prayer times."
       },
       "entitlements": {
-        "aps-environment": "production"
+        "aps-environment": "production",
+        "com.apple.developer.in-app-payments": [
+          "merchant.com.prayertimes.islamic"
+        ]
       },
       "buildNumber": "1"
     },
@@ -41,7 +45,8 @@
         "ACCESS_FINE_LOCATION",
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
-        "SCHEDULE_EXACT_ALARM"
+        "SCHEDULE_EXACT_ALARM",
+        "com.android.vending.BILLING"
       ]
     },
     "web": {
@@ -82,19 +87,11 @@
     "experiments": {
       "typedRoutes": true
     },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "your-project-id-here"
-      }
-    },
-    "owner": "your-expo-username",
     "updates": {
       "fallbackToCacheTimeout": 0
     },
     "assetBundlePatterns": [
       "**/*"
     ]
-  },
-  "scheme": "My Prayer"
+  }
 }

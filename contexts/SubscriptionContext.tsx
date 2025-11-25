@@ -3,15 +3,16 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type SubscriptionTier = 'free' | 'premium' | 'ultra';
+export type SubscriptionTier = 'free' | 'premium' | 'ultra' | 'super_ultra';
 
 export interface SubscriptionTierData {
   id: string;
   name: SubscriptionTier;
   display_name: string;
   description: string;
-  price_monthly: number;
-  price_yearly: number;
+  price_monthly: number | null;
+  price_yearly: number | null;
+  price_lifetime: number | null;
   features: string[];
   sort_order: number;
 }
@@ -43,7 +44,7 @@ interface SubscriptionContextType {
   features: SubscriptionFeature[];
   loading: boolean;
   hasFeature: (featureKey: string) => boolean;
-  upgradeTier: (tierName: SubscriptionTier, billingCycle: 'monthly' | 'yearly') => Promise<boolean>;
+  upgradeTier: (tierName: SubscriptionTier, billingCycle: 'monthly' | 'yearly' | 'lifetime') => Promise<boolean>;
   cancelSubscription: () => Promise<boolean>;
   refreshSubscription: () => Promise<void>;
 }
@@ -155,7 +156,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
 
     // Check tier hierarchy
-    const tierHierarchy: SubscriptionTier[] = ['free', 'premium', 'ultra'];
+    const tierHierarchy: SubscriptionTier[] = ['free', 'premium', 'ultra', 'super_ultra'];
     const currentTierIndex = tierHierarchy.indexOf(currentTier);
     const requiredTierIndex = tierHierarchy.indexOf(feature.required_tier);
 
@@ -164,7 +165,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     return hasAccess;
   };
 
-  const upgradeTier = async (tierName: SubscriptionTier, billingCycle: 'monthly' | 'yearly'): Promise<boolean> => {
+  const upgradeTier = async (tierName: SubscriptionTier, billingCycle: 'monthly' | 'yearly' | 'lifetime'): Promise<boolean> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
@@ -180,11 +181,16 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       }
 
       const startDate = new Date();
-      const endDate = new Date();
-      if (billingCycle === 'monthly') {
-        endDate.setMonth(endDate.getMonth() + 1);
-      } else {
-        endDate.setFullYear(endDate.getFullYear() + 1);
+      let endDate: Date | null = null;
+      
+      // Lifetime subscriptions don't have an end date
+      if (billingCycle !== 'lifetime') {
+        endDate = new Date();
+        if (billingCycle === 'monthly') {
+          endDate.setMonth(endDate.getMonth() + 1);
+        } else {
+          endDate.setFullYear(endDate.getFullYear() + 1);
+        }
       }
 
       const subscriptionData = {
@@ -193,11 +199,11 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         status: 'active',
         billing_cycle: billingCycle,
         start_date: startDate.toISOString(),
-        end_date: endDate.toISOString(),
-        auto_renew: true,
+        end_date: endDate ? endDate.toISOString() : null,
+        auto_renew: billingCycle !== 'lifetime', // Lifetime doesn't auto-renew
         payment_method: 'demo',
         last_payment_date: startDate.toISOString(),
-        next_payment_date: endDate.toISOString(),
+        next_payment_date: endDate ? endDate.toISOString() : null,
       };
 
       const { error } = await supabase

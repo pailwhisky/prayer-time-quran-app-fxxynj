@@ -29,7 +29,7 @@ export default function SubscriptionModal({
 }: SubscriptionModalProps) {
   const { tiers, currentTier, upgradeTier, loading } = useSubscription();
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier>('premium');
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
+  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly' | 'lifetime'>('monthly');
   const [upgrading, setUpgrading] = useState(false);
 
   const handleUpgrade = async () => {
@@ -40,7 +40,7 @@ export default function SubscriptionModal({
       if (success) {
         Alert.alert(
           'Success!',
-          `You've successfully upgraded to ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)}!`,
+          `You've successfully upgraded to ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1).replace('_', ' ')}!`,
           [
             {
               text: 'OK',
@@ -62,8 +62,18 @@ export default function SubscriptionModal({
   const renderTierCard = (tier: any) => {
     const isCurrentTier = tier.name === currentTier;
     const isSelected = tier.name === selectedTier;
-    const price = billingCycle === 'monthly' ? tier.price_monthly : tier.price_yearly;
-    const priceLabel = billingCycle === 'monthly' ? '/month' : '/year';
+    const isLifetimeTier = tier.price_lifetime !== null && tier.price_monthly === null && tier.price_yearly === null;
+    
+    let price = 0;
+    let priceLabel = '';
+    
+    if (isLifetimeTier) {
+      price = tier.price_lifetime;
+      priceLabel = ' one-time';
+    } else {
+      price = billingCycle === 'monthly' ? tier.price_monthly : tier.price_yearly;
+      priceLabel = billingCycle === 'monthly' ? '/month' : '/year';
+    }
 
     if (tier.name === 'free') {
       return null; // Don't show free tier in upgrade modal
@@ -76,14 +86,23 @@ export default function SubscriptionModal({
           styles.tierCard,
           isSelected && styles.tierCardSelected,
           isCurrentTier && styles.tierCardCurrent,
+          isLifetimeTier && styles.tierCardLifetime,
         ]}
         onPress={() => !isCurrentTier && setSelectedTier(tier.name)}
         disabled={isCurrentTier}
       >
+        {isLifetimeTier && (
+          <View style={styles.lifetimeBanner}>
+            <IconSymbol name="star" size={16} color={colors.card} />
+            <Text style={styles.lifetimeBannerText}>LIFETIME ACCESS</Text>
+            <IconSymbol name="star" size={16} color={colors.card} />
+          </View>
+        )}
+        
         <View style={styles.tierHeader}>
           <View>
             <Text style={styles.tierName}>{tier.display_name}</Text>
-            <Text style={styles.tierPrice}>
+            <Text style={[styles.tierPrice, isLifetimeTier && styles.tierPriceLifetime]}>
               ${price.toFixed(2)}
               <Text style={styles.tierPriceLabel}>{priceLabel}</Text>
             </Text>
@@ -103,14 +122,20 @@ export default function SubscriptionModal({
         <View style={styles.featuresContainer}>
           {tier.features.map((feature: string, index: number) => (
             <View key={index} style={styles.featureItem}>
-              <IconSymbol name="check" size={16} color={colors.primary} />
-              <Text style={styles.featureText}>{feature}</Text>
+              <IconSymbol name="check" size={16} color={isLifetimeTier ? colors.highlight : colors.primary} />
+              <Text style={styles.featureText}>{feature.replace(/_/g, ' ')}</Text>
             </View>
           ))}
         </View>
       </TouchableOpacity>
     );
   };
+
+  // Check if selected tier is lifetime
+  const selectedTierData = tiers.find(t => t.name === selectedTier);
+  const isLifetimeSelected = selectedTierData?.price_lifetime !== null && 
+                             selectedTierData?.price_monthly === null && 
+                             selectedTierData?.price_yearly === null;
 
   return (
     <Modal
@@ -132,46 +157,48 @@ export default function SubscriptionModal({
             <IconSymbol name="lock" size={20} color={colors.highlight} />
             <Text style={styles.featureAlertText}>
               <Text style={styles.featureAlertBold}>{featureName}</Text> requires{' '}
-              {requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1)} subscription
+              {requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1).replace('_', ' ')} subscription
             </Text>
           </View>
         )}
 
-        <View style={styles.billingToggle}>
-          <TouchableOpacity
-            style={[
-              styles.billingButton,
-              billingCycle === 'monthly' && styles.billingButtonActive,
-            ]}
-            onPress={() => setBillingCycle('monthly')}
-          >
-            <Text
+        {!isLifetimeSelected && (
+          <View style={styles.billingToggle}>
+            <TouchableOpacity
               style={[
-                styles.billingButtonText,
-                billingCycle === 'monthly' && styles.billingButtonTextActive,
+                styles.billingButton,
+                billingCycle === 'monthly' && styles.billingButtonActive,
               ]}
+              onPress={() => setBillingCycle('monthly')}
             >
-              Monthly
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.billingButton,
-              billingCycle === 'yearly' && styles.billingButtonActive,
-            ]}
-            onPress={() => setBillingCycle('yearly')}
-          >
-            <Text
+              <Text
+                style={[
+                  styles.billingButtonText,
+                  billingCycle === 'monthly' && styles.billingButtonTextActive,
+                ]}
+              >
+                Monthly
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[
-                styles.billingButtonText,
-                billingCycle === 'yearly' && styles.billingButtonTextActive,
+                styles.billingButton,
+                billingCycle === 'yearly' && styles.billingButtonActive,
               ]}
+              onPress={() => setBillingCycle('yearly')}
             >
-              Yearly
-              <Text style={styles.saveBadge}> Save 17%</Text>
-            </Text>
-          </TouchableOpacity>
-        </View>
+              <Text
+                style={[
+                  styles.billingButtonText,
+                  billingCycle === 'yearly' && styles.billingButtonTextActive,
+                ]}
+              >
+                Yearly
+                <Text style={styles.saveBadge}> Save 17%</Text>
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <ScrollView
           style={styles.content}
@@ -188,7 +215,9 @@ export default function SubscriptionModal({
             <Text style={styles.infoTitle}>What you get:</Text>
             <View style={styles.infoItem}>
               <IconSymbol name="check-circle" size={20} color={colors.primary} />
-              <Text style={styles.infoText}>Cancel anytime, no questions asked</Text>
+              <Text style={styles.infoText}>
+                {isLifetimeSelected ? 'One-time payment, lifetime access' : 'Cancel anytime, no questions asked'}
+              </Text>
             </View>
             <View style={styles.infoItem}>
               <IconSymbol name="check-circle" size={20} color={colors.primary} />
@@ -202,22 +231,39 @@ export default function SubscriptionModal({
               <IconSymbol name="check-circle" size={20} color={colors.primary} />
               <Text style={styles.infoText}>Support the development of Islamic apps</Text>
             </View>
+            {isLifetimeSelected && (
+              <View style={styles.infoItem}>
+                <IconSymbol name="check-circle" size={20} color={colors.highlight} />
+                <Text style={[styles.infoText, styles.infoTextHighlight]}>
+                  Priority support & early access to new features
+                </Text>
+              </View>
+            )}
           </View>
         </ScrollView>
 
         {selectedTier !== currentTier && (
           <View style={styles.footer}>
             <TouchableOpacity
-              style={[styles.upgradeButton, upgrading && styles.upgradeButtonDisabled]}
+              style={[
+                styles.upgradeButton,
+                upgrading && styles.upgradeButtonDisabled,
+                isLifetimeSelected && styles.upgradeButtonLifetime,
+              ]}
               onPress={handleUpgrade}
               disabled={upgrading}
             >
               {upgrading ? (
                 <ActivityIndicator color={colors.card} />
               ) : (
-                <Text style={styles.upgradeButtonText}>
-                  Upgrade to {selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)}
-                </Text>
+                <>
+                  <Text style={styles.upgradeButtonText}>
+                    {isLifetimeSelected ? 'Get Lifetime Access' : `Upgrade to ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1).replace('_', ' ')}`}
+                  </Text>
+                  {isLifetimeSelected && (
+                    <IconSymbol name="star" size={20} color={colors.card} />
+                  )}
+                </>
               )}
             </TouchableOpacity>
           </View>
@@ -309,6 +355,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 2,
     borderColor: colors.border,
+    overflow: 'hidden',
   },
   tierCardSelected: {
     borderColor: colors.primary,
@@ -318,11 +365,35 @@ const styles = StyleSheet.create({
   tierCardCurrent: {
     opacity: 0.6,
   },
+  tierCardLifetime: {
+    borderColor: colors.highlight,
+    backgroundColor: colors.highlight + '10',
+  },
+  lifetimeBanner: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.highlight,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  lifetimeBannerText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: colors.card,
+    letterSpacing: 1,
+  },
   tierHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+    marginTop: 32,
   },
   tierName: {
     fontSize: 24,
@@ -334,6 +405,9 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     color: colors.primary,
+  },
+  tierPriceLifetime: {
+    color: colors.highlight,
   },
   tierPriceLabel: {
     fontSize: 16,
@@ -369,6 +443,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     lineHeight: 20,
+    textTransform: 'capitalize',
   },
   infoSection: {
     backgroundColor: colors.card,
@@ -396,6 +471,10 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
+  infoTextHighlight: {
+    color: colors.highlight,
+    fontWeight: '600',
+  },
   footer: {
     padding: 20,
     paddingBottom: 40,
@@ -407,9 +486,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
   },
   upgradeButtonDisabled: {
     opacity: 0.6,
+  },
+  upgradeButtonLifetime: {
+    backgroundColor: colors.highlight,
   },
   upgradeButtonText: {
     fontSize: 18,

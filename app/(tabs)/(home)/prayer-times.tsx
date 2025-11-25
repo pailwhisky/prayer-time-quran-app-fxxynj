@@ -43,7 +43,7 @@ export default function PrayerTimesScreen() {
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           accessibilityLabel="Close"
         >
-          <IconSymbol name="close" size={24} color={colors.text} />
+          <IconSymbol name="xmark" size={24} color={colors.text} />
         </TouchableOpacity>
       ),
     });

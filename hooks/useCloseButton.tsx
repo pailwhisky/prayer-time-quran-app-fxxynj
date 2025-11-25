@@ -3,7 +3,8 @@ import React from 'react';
 import { useNavigation } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import { TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors } from '@/styles/commonStyles';
 
 /**
  * Custom hook to add a consistent "X" close button to sub-pages
@@ -22,7 +23,7 @@ export function useCloseButton() {
           accessibilityLabel="Close"
           accessibilityRole="button"
         >
-          <Ionicons name="close" size={24} color="#333" />
+          <IconSymbol name="xmark" size={24} color={colors.text} />
         </TouchableOpacity>
       ),
     });

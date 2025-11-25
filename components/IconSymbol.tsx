@@ -1,3 +1,4 @@
+
 // This file is a fallback for using MaterialIcons on Android and web.
 
 import React from "react";
@@ -40,6 +41,7 @@ const MAPPING = {
   "message": "chat-bubble-outline",
   "bell.fill": "notifications",
   "bell": "notifications-none",
+  "bell.slash": "notifications-off",
   "heart.fill": "favorite",
   "heart": "favorite-border",
 
@@ -47,6 +49,7 @@ const MAPPING = {
   "plus": "add",
   "minus": "remove",
   "xmark": "close",
+  "close": "close",
   "checkmark": "check",
   "checkmark.circle.fill": "check-circle",
   "checkmark.circle": "check-circle-outline",
@@ -101,6 +104,8 @@ const MAPPING = {
   "star": "star-border",
   "bookmark.fill": "bookmark",
   "bookmark": "bookmark-border",
+  "sparkles": "auto-awesome",
+  "sparkle": "auto-awesome",
 
   // Technology & Code
   "chevron.left.forwardslash.chevron.right": "code",

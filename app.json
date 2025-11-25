@@ -1,8 +1,7 @@
-
 {
   "expo": {
-    "name": "Prayer Times - Islamic Companion",
-    "slug": "prayer-times-islamic",
+    "name": "My Prayer",
+    "slug": "My Prayer",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/natively-dark.png",
@@ -23,6 +22,9 @@
         "NSMotionUsageDescription": "We need access to your device's sensors to show the Qibla direction using the compass.",
         "NSCalendarsUsageDescription": "We need access to your calendar to add prayer time reminders.",
         "NSRemindersUsageDescription": "We need access to reminders to notify you of prayer times."
+      },
+      "entitlements": {
+        "aps-environment": "production"
       },
       "buildNumber": "1"
     },
@@ -93,5 +95,6 @@
     "assetBundlePatterns": [
       "**/*"
     ]
-  }
+  },
+  "scheme": "My Prayer"
 }

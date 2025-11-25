@@ -23,6 +23,7 @@ import DuaLibrary from '@/components/DuaLibrary';
 import HijriCalendar from '@/components/HijriCalendar';
 import ARQiblaCompass from '@/components/ARQiblaCompass';
 import NavigationHeader from '@/components/NavigationHeader';
+import FeatureVerificationTool from '@/components/FeatureVerificationTool';
 
 interface PremiumFeature {
   id: string;
@@ -121,6 +122,7 @@ const PREMIUM_FEATURES: PremiumFeature[] = [
 export default function PremiumScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
+  const [showVerificationTool, setShowVerificationTool] = useState(false);
   const { currentTier, cancelSubscription } = useSubscription();
 
   const openFeature = (feature: PremiumFeature) => {
@@ -178,22 +180,32 @@ export default function PremiumScreen() {
         </View>
       </View>
 
-      {currentTier === 'free' ? (
+      <View style={styles.buttonRow}>
+        {currentTier === 'free' ? (
+          <TouchableOpacity
+            style={styles.upgradeButton}
+            onPress={() => setShowSubscriptionModal(true)}
+          >
+            <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+            <IconSymbol name="arrow-forward" size={20} color={colors.card} />
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={styles.manageButton}
+            onPress={handleCancelSubscription}
+          >
+            <Text style={styles.manageButtonText}>Manage Subscription</Text>
+          </TouchableOpacity>
+        )}
+        
         <TouchableOpacity
-          style={styles.upgradeButton}
-          onPress={() => setShowSubscriptionModal(true)}
+          style={styles.verifyButton}
+          onPress={() => setShowVerificationTool(true)}
         >
-          <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
-          <IconSymbol name="arrow-forward" size={20} color={colors.card} />
+          <IconSymbol name="verified" size={20} color={colors.primary} />
+          <Text style={styles.verifyButtonText}>Verify Features</Text>
         </TouchableOpacity>
-      ) : (
-        <TouchableOpacity
-          style={styles.manageButton}
-          onPress={handleCancelSubscription}
-        >
-          <Text style={styles.manageButtonText}>Manage Subscription</Text>
-        </TouchableOpacity>
-      )}
+      </View>
     </View>
   );
 
@@ -287,6 +299,11 @@ export default function PremiumScreen() {
         visible={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
       />
+
+      <FeatureVerificationTool
+        visible={showVerificationTool}
+        onClose={() => setShowVerificationTool(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -332,7 +349,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
   upgradeButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -348,6 +370,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   manageButton: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
@@ -361,6 +384,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
+  },
+  verifyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    gap: 6,
+  },
+  verifyButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   sectionTitle: {
     fontSize: 22,

@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getCurrentEntitlements, IAPEntitlements } from '@/utils/appleIAPVerification';
 
 export type SubscriptionTier = 'free' | 'premium' | 'ultra' | 'super_ultra';
 
@@ -43,10 +44,12 @@ interface SubscriptionContextType {
   tiers: SubscriptionTierData[];
   features: SubscriptionFeature[];
   loading: boolean;
+  entitlements: IAPEntitlements | null;
   hasFeature: (featureKey: string) => boolean;
   upgradeTier: (tierName: SubscriptionTier, billingCycle: 'monthly' | 'yearly' | 'lifetime') => Promise<boolean>;
   cancelSubscription: () => Promise<boolean>;
   refreshSubscription: () => Promise<void>;
+  refreshEntitlements: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -68,6 +71,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [tiers, setTiers] = useState<SubscriptionTierData[]>([]);
   const [features, setFeatures] = useState<SubscriptionFeature[]>([]);
+  const [entitlements, setEntitlements] = useState<IAPEntitlements | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -105,32 +109,42 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         console.log('Loaded features:', featuresData);
       }
 
-      // Load user subscription
+      // Load user subscription and entitlements
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
+        // Fetch entitlements from the verification system
+        const entitlementsResult = await getCurrentEntitlements();
+        
+        if (entitlementsResult.success && entitlementsResult.entitlements) {
+          setEntitlements(entitlementsResult.entitlements);
+          const tierName = entitlementsResult.entitlements.tierName as SubscriptionTier;
+          setCurrentTier(tierName);
+          await AsyncStorage.setItem('subscription_tier', tierName);
+          console.log('User entitlements loaded:', entitlementsResult.entitlements);
+        } else {
+          console.log('Failed to load entitlements, using free tier');
+          setCurrentTier('free');
+          setEntitlements(null);
+        }
+
+        // Also load subscription data for UI display
         const { data: subData, error: subError } = await supabase
           .from('user_subscriptions')
           .select('*, subscription_tiers(name)')
           .eq('user_id', user.id)
-          .eq('status', 'active')
           .single();
 
-        if (subError) {
-          console.log('No active subscription found, using free tier');
-          setCurrentTier('free');
-          setSubscription(null);
-        } else if (subData) {
+        if (!subError && subData) {
           setSubscription(subData);
-          const tierName = (subData as any).subscription_tiers?.name || 'free';
-          setCurrentTier(tierName);
-          await AsyncStorage.setItem('subscription_tier', tierName);
-          console.log('User subscription tier:', tierName);
+        } else {
+          setSubscription(null);
         }
       } else {
         console.log('No user logged in, using free tier');
         setCurrentTier('free');
         setSubscription(null);
+        setEntitlements(null);
       }
     } catch (error) {
       console.error('Error loading subscription data:', error);
@@ -259,6 +273,25 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     await loadSubscriptionData();
   };
 
+  const refreshEntitlements = async () => {
+    try {
+      console.log('Refreshing entitlements...');
+      const entitlementsResult = await getCurrentEntitlements();
+      
+      if (entitlementsResult.success && entitlementsResult.entitlements) {
+        setEntitlements(entitlementsResult.entitlements);
+        const tierName = entitlementsResult.entitlements.tierName as SubscriptionTier;
+        setCurrentTier(tierName);
+        await AsyncStorage.setItem('subscription_tier', tierName);
+        console.log('Entitlements refreshed:', entitlementsResult.entitlements);
+      } else {
+        console.log('Failed to refresh entitlements');
+      }
+    } catch (error) {
+      console.error('Error refreshing entitlements:', error);
+    }
+  };
+
   return (
     <SubscriptionContext.Provider
       value={{
@@ -267,10 +300,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         tiers,
         features,
         loading,
+        entitlements,
         hasFeature,
         upgradeTier,
         cancelSubscription,
         refreshSubscription,
+        refreshEntitlements,
       }}
     >
       {children}

@@ -29,6 +29,12 @@ export const colors = {
   superUltraGoldRich: '#CFB53B',    // Old Gold
   superUltraGoldBronze: '#CD7F32',  // Bronze
   superUltraGoldRose: '#B76E79',    // Rose Gold
+  
+  // Status colors
+  success: '#10B981',           // Green
+  error: '#EF4444',             // Red
+  warning: '#F59E0B',           // Amber
+  info: '#3B82F6',              // Blue
 };
 
 export const buttonStyles = StyleSheet.create({

@@ -167,7 +167,7 @@ export default function PremiumScreen() {
         ])
       ).start();
     }
-  }, [isSuperUltra]);
+  }, [isSuperUltra, shimmerAnim, pulseAnim]);
 
   const openFeature = (feature: PremiumFeature) => {
     setActiveModal(feature.component);

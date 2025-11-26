@@ -70,7 +70,7 @@ export default function SubscriptionModal({
         }),
       ])
     ).start();
-  }, []);
+  }, [shimmerAnim, pulseAnim]);
 
   const handleUpgrade = async () => {
     try {

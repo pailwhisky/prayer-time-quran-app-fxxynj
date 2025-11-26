@@ -10,11 +10,13 @@ import {
   Alert,
   ActivityIndicator,
   Animated,
+  Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { useSubscription, SubscriptionTier } from '@/contexts/SubscriptionContext';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
 
 interface SubscriptionModalProps {
   visible: boolean;
@@ -29,14 +31,19 @@ export default function SubscriptionModal({
   requiredTier,
   featureName,
 }: SubscriptionModalProps) {
-  const { tiers, currentTier, upgradeTier, loading } = useSubscription();
-  const [selectedTier, setSelectedTier] = useState<SubscriptionTier>('premium');
-  const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly' | 'lifetime'>('monthly');
-  const [upgrading, setUpgrading] = useState(false);
+  const { tiers, currentTier, loading: contextLoading } = useSubscription();
+  const { offerings, loadOfferings, purchase, restore, loading: revenueCatLoading } = useRevenueCat();
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
   
   // Animation values for Super Ultra shimmer effect
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (visible && (Platform.OS === 'ios' || Platform.OS === 'android')) {
+      loadOfferings();
+    }
+  }, [visible]);
 
   useEffect(() => {
     // Shimmer animation
@@ -72,31 +79,17 @@ export default function SubscriptionModal({
     ).start();
   }, [shimmerAnim, pulseAnim]);
 
-  const handleUpgrade = async () => {
-    try {
-      setUpgrading(true);
-      const success = await upgradeTier(selectedTier, billingCycle);
-      
-      if (success) {
-        Alert.alert(
-          'Success!',
-          `You've successfully upgraded to ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1).replace('_', ' ')}!`,
-          [
-            {
-              text: 'OK',
-              onPress: onClose,
-            },
-          ]
-        );
-      } else {
-        Alert.alert('Error', 'Failed to upgrade subscription. Please try again.');
-      }
-    } catch (error) {
-      console.error('Error upgrading:', error);
-      Alert.alert('Error', 'An unexpected error occurred.');
-    } finally {
-      setUpgrading(false);
+  const handlePurchase = async () => {
+    if (!selectedPackage) {
+      Alert.alert('No Package Selected', 'Please select a subscription package');
+      return;
     }
+
+    await purchase(selectedPackage);
+  };
+
+  const handleRestore = async () => {
+    await restore();
   };
 
   const getFeatureIcon = (feature: string) => {
@@ -130,35 +123,25 @@ export default function SubscriptionModal({
     return iconMap[feature] || 'check';
   };
 
-  const renderTierCard = (tier: any) => {
+  const renderPackageCard = (pkg: any, tier: any) => {
+    const isSelected = selectedPackage?.identifier === pkg.identifier;
     const isCurrentTier = tier.name === currentTier;
-    const isSelected = tier.name === selectedTier;
-    const isLifetimeTier = tier.price_lifetime !== null && tier.price_monthly === null && tier.price_yearly === null;
     const isSuperUltra = tier.name === 'super_ultra';
     
-    let price = 0;
-    let priceLabel = '';
-    
-    if (isLifetimeTier) {
-      price = tier.price_lifetime;
-      priceLabel = ' one-time';
-    } else {
-      price = billingCycle === 'monthly' ? tier.price_monthly : tier.price_yearly;
-      priceLabel = billingCycle === 'monthly' ? '/month' : '/year';
-    }
-
-    if (tier.name === 'free') {
-      return null;
-    }
-
     const shimmerOpacity = shimmerAnim.interpolate({
       inputRange: [0, 1],
       outputRange: [0.3, 1],
     });
 
+    // Get price information
+    const priceString = pkg.product.priceString;
+    const period = pkg.packageType === 'ANNUAL' ? '/year' : 
+                   pkg.packageType === 'MONTHLY' ? '/month' : 
+                   pkg.packageType === 'LIFETIME' ? ' one-time' : '';
+
     return (
       <Animated.View
-        key={tier.id}
+        key={pkg.identifier}
         style={[
           isSuperUltra && { transform: [{ scale: pulseAnim }] }
         ]}
@@ -168,15 +151,14 @@ export default function SubscriptionModal({
             styles.tierCard,
             isSelected && styles.tierCardSelected,
             isCurrentTier && styles.tierCardCurrent,
-            isLifetimeTier && styles.tierCardLifetime,
+            pkg.packageType === 'LIFETIME' && styles.tierCardLifetime,
             isSuperUltra && styles.tierCardSuperUltra,
           ]}
-          onPress={() => !isCurrentTier && setSelectedTier(tier.name)}
+          onPress={() => !isCurrentTier && setSelectedPackage(pkg)}
           disabled={isCurrentTier}
         >
           {isSuperUltra && (
             <>
-              {/* Gold shimmer overlay */}
               <Animated.View 
                 style={[
                   styles.goldShimmerOverlay,
@@ -184,7 +166,6 @@ export default function SubscriptionModal({
                 ]}
               />
               
-              {/* Decorative gold corners */}
               <View style={styles.goldCornerTopLeft} />
               <View style={styles.goldCornerTopRight} />
               <View style={styles.goldCornerBottomLeft} />
@@ -192,7 +173,7 @@ export default function SubscriptionModal({
             </>
           )}
 
-          {isLifetimeTier && (
+          {pkg.packageType === 'LIFETIME' && (
             <LinearGradient
               colors={
                 isSuperUltra 
@@ -218,9 +199,9 @@ export default function SubscriptionModal({
                 {tier.display_name}
                 {isSuperUltra && ' 👑'}
               </Text>
-              <Text style={[styles.tierPrice, isLifetimeTier && styles.tierPriceLifetime, isSuperUltra && styles.tierPriceSuperUltra]}>
-                ${price.toFixed(2)}
-                <Text style={styles.tierPriceLabel}>{priceLabel}</Text>
+              <Text style={[styles.tierPrice, pkg.packageType === 'LIFETIME' && styles.tierPriceLifetime, isSuperUltra && styles.tierPriceSuperUltra]}>
+                {priceString}
+                <Text style={styles.tierPriceLabel}>{period}</Text>
               </Text>
             </View>
             {isCurrentTier && (
@@ -256,7 +237,7 @@ export default function SubscriptionModal({
           )}
 
           <View style={styles.featuresContainer}>
-            {tier.features.map((feature: string, index: number) => {
+            {tier.features.slice(0, 5).map((feature: string, index: number) => {
               const isExclusiveFeature = [
                 'custom_prayer_reminders',
                 'advanced_analytics',
@@ -282,7 +263,7 @@ export default function SubscriptionModal({
                     color={
                       isSuperUltra && isExclusiveFeature 
                         ? colors.superUltraGold 
-                        : isLifetimeTier 
+                        : pkg.packageType === 'LIFETIME'
                           ? colors.highlight 
                           : colors.primary
                     } 
@@ -297,17 +278,117 @@ export default function SubscriptionModal({
                 </View>
               );
             })}
+            {tier.features.length > 5 && (
+              <Text style={styles.moreFeatures}>
+                + {tier.features.length - 5} more features
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
       </Animated.View>
     );
   };
 
-  const selectedTierData = tiers.find(t => t.name === selectedTier);
-  const isLifetimeSelected = selectedTierData?.price_lifetime !== null && 
-                             selectedTierData?.price_monthly === null && 
-                             selectedTierData?.price_yearly === null;
-  const isSuperUltraSelected = selectedTier === 'super_ultra';
+  const renderContent = () => {
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+      return (
+        <View style={styles.unsupportedContainer}>
+          <IconSymbol name="info" size={48} color={colors.textSecondary} />
+          <Text style={styles.unsupportedTitle}>Not Available</Text>
+          <Text style={styles.unsupportedText}>
+            In-app purchases are only available on iOS and Android devices.
+          </Text>
+        </View>
+      );
+    }
+
+    if (contextLoading || revenueCatLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Loading subscription options...</Text>
+        </View>
+      );
+    }
+
+    if (!offerings || !offerings.availablePackages || offerings.availablePackages.length === 0) {
+      return (
+        <View style={styles.unsupportedContainer}>
+          <IconSymbol name="error" size={48} color={colors.textSecondary} />
+          <Text style={styles.unsupportedTitle}>No Subscriptions Available</Text>
+          <Text style={styles.unsupportedText}>
+            Unable to load subscription options. Please try again later.
+          </Text>
+          <TouchableOpacity style={styles.retryButton} onPress={loadOfferings}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {offerings.availablePackages.map((pkg: any) => {
+            // Match package to tier based on identifier
+            const tier = tiers.find(t => 
+              pkg.identifier.toLowerCase().includes(t.name.toLowerCase())
+            );
+            
+            if (!tier || tier.name === 'free') return null;
+            
+            return renderPackageCard(pkg, tier);
+          })}
+
+          <View style={styles.infoSection}>
+            <Text style={styles.infoTitle}>What you get:</Text>
+            <View style={styles.infoItem}>
+              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <Text style={styles.infoText}>Cancel anytime, no questions asked</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <Text style={styles.infoText}>Instant access to all features</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <Text style={styles.infoText}>Regular updates and new features</Text>
+            </View>
+            <View style={styles.infoItem}>
+              <IconSymbol name="check-circle" size={20} color={colors.primary} />
+              <Text style={styles.infoText}>Support the development of Islamic apps</Text>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.restoreButton} onPress={handleRestore}>
+            <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {selectedPackage && (
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={styles.purchaseButton}
+              onPress={handlePurchase}
+              disabled={revenueCatLoading}
+            >
+              {revenueCatLoading ? (
+                <ActivityIndicator color={colors.card} />
+              ) : (
+                <Text style={styles.purchaseButtonText}>
+                  Subscribe Now
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
+      </>
+    );
+  };
 
   return (
     <Modal
@@ -334,181 +415,7 @@ export default function SubscriptionModal({
           </View>
         )}
 
-        {!isLifetimeSelected && (
-          <View style={styles.billingToggle}>
-            <TouchableOpacity
-              style={[
-                styles.billingButton,
-                billingCycle === 'monthly' && styles.billingButtonActive,
-              ]}
-              onPress={() => setBillingCycle('monthly')}
-            >
-              <Text
-                style={[
-                  styles.billingButtonText,
-                  billingCycle === 'monthly' && styles.billingButtonTextActive,
-                ]}
-              >
-                Monthly
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.billingButton,
-                billingCycle === 'yearly' && styles.billingButtonActive,
-              ]}
-              onPress={() => setBillingCycle('yearly')}
-            >
-              <Text
-                style={[
-                  styles.billingButtonText,
-                  billingCycle === 'yearly' && styles.billingButtonTextActive,
-                ]}
-              >
-                Yearly
-                <Text style={styles.saveBadge}> Save 17%</Text>
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          {loading ? (
-            <ActivityIndicator size="large" color={colors.primary} />
-          ) : (
-            tiers.map(renderTierCard)
-          )}
-
-          <View style={[styles.infoSection, isSuperUltraSelected && styles.infoSectionSuperUltra]}>
-            <Text style={[styles.infoTitle, isSuperUltraSelected && styles.infoTitleSuperUltra]}>
-              {isSuperUltraSelected ? '✨ Super Ultra Benefits:' : 'What you get:'}
-            </Text>
-            <View style={styles.infoItem}>
-              <IconSymbol 
-                name="check-circle" 
-                size={20} 
-                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
-              />
-              <Text style={styles.infoText}>
-                {isLifetimeSelected ? 'One-time payment, lifetime access' : 'Cancel anytime, no questions asked'}
-              </Text>
-            </View>
-            <View style={styles.infoItem}>
-              <IconSymbol 
-                name="check-circle" 
-                size={20} 
-                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
-              />
-              <Text style={styles.infoText}>Instant access to all features</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <IconSymbol 
-                name="check-circle" 
-                size={20} 
-                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
-              />
-              <Text style={styles.infoText}>Regular updates and new features</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <IconSymbol 
-                name="check-circle" 
-                size={20} 
-                color={isSuperUltraSelected ? colors.superUltraGold : colors.primary} 
-              />
-              <Text style={styles.infoText}>Support the development of Islamic apps</Text>
-            </View>
-            {isLifetimeSelected && (
-              <>
-                <View style={styles.infoItem}>
-                  <IconSymbol 
-                    name="check-circle" 
-                    size={20} 
-                    color={isSuperUltraSelected ? colors.superUltraGold : colors.highlight} 
-                  />
-                  <Text style={[styles.infoText, styles.infoTextHighlight]}>
-                    Priority support & early access to new features
-                  </Text>
-                </View>
-                {isSuperUltraSelected && (
-                  <>
-                    <View style={styles.infoItem}>
-                      <IconSymbol name="star" size={20} color={colors.superUltraGold} />
-                      <Text style={[styles.infoText, styles.infoTextSuperUltra]}>
-                        Monthly virtual sessions with Islamic scholars
-                      </Text>
-                    </View>
-                    <View style={styles.infoItem}>
-                      <IconSymbol name="star" size={20} color={colors.superUltraGold} />
-                      <Text style={[styles.infoText, styles.infoTextSuperUltra]}>
-                        Exclusive community of dedicated Muslims
-                      </Text>
-                    </View>
-                    <View style={styles.infoItem}>
-                      <IconSymbol name="star" size={20} color={colors.superUltraGold} />
-                      <Text style={[styles.infoText, styles.infoTextSuperUltra]}>
-                        Advanced AI-powered learning & memorization
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </>
-            )}
-          </View>
-        </ScrollView>
-
-        {selectedTier !== currentTier && (
-          <View style={styles.footer}>
-            <TouchableOpacity
-              style={[
-                styles.upgradeButton,
-                upgrading && styles.upgradeButtonDisabled,
-                isLifetimeSelected && styles.upgradeButtonLifetime,
-              ]}
-              onPress={handleUpgrade}
-              disabled={upgrading}
-            >
-              {isSuperUltraSelected ? (
-                <LinearGradient
-                  colors={[colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.upgradeButtonGradient}
-                >
-                  {upgrading ? (
-                    <ActivityIndicator color={colors.superUltraGoldDeep} />
-                  ) : (
-                    <>
-                      <IconSymbol name="crown" size={20} color={colors.superUltraGoldDeep} />
-                      <Text style={styles.upgradeButtonTextSuperUltra}>
-                        Get Ultimate Lifetime Access
-                      </Text>
-                      <IconSymbol name="star" size={20} color={colors.superUltraGoldDeep} />
-                    </>
-                  )}
-                </LinearGradient>
-              ) : (
-                <>
-                  {upgrading ? (
-                    <ActivityIndicator color={colors.card} />
-                  ) : (
-                    <>
-                      <Text style={styles.upgradeButtonText}>
-                        {isLifetimeSelected ? 'Get Lifetime Access' : `Upgrade to ${selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1).replace('_', ' ')}`}
-                      </Text>
-                      {isLifetimeSelected && (
-                        <IconSymbol name="star" size={20} color={colors.card} />
-                      )}
-                    </>
-                  )}
-                </>
-              )}
-            </TouchableOpacity>
-          </View>
-        )}
+        {renderContent()}
       </View>
     </Modal>
   );
@@ -552,42 +459,53 @@ const styles = StyleSheet.create({
   featureAlertBold: {
     fontWeight: 'bold',
   },
-  billingToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 4,
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  billingButton: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  billingButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  billingButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  billingButtonTextActive: {
-    color: colors.card,
-  },
-  saveBadge: {
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
   content: {
     flex: 1,
   },
   scrollContent: {
     padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: colors.textSecondary,
+  },
+  unsupportedContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  unsupportedTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  unsupportedText: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  retryButton: {
+    marginTop: 24,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.card,
   },
   tierCard: {
     backgroundColor: colors.card,
@@ -803,6 +721,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.superUltraGoldDeep,
   },
+  moreFeatures: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
   infoSection: {
     backgroundColor: colors.card,
     borderRadius: 12,
@@ -811,21 +735,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  infoSectionSuperUltra: {
-    backgroundColor: colors.superUltraGoldPale,
-    borderColor: colors.superUltraGold,
-    borderWidth: 3,
-    boxShadow: `0px 4px 16px ${colors.superUltraGold}40`,
-  },
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 16,
-  },
-  infoTitleSuperUltra: {
-    fontSize: 20,
-    color: colors.superUltraGoldDeep,
   },
   infoItem: {
     flexDirection: 'row',
@@ -839,13 +753,15 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
-  infoTextHighlight: {
-    color: colors.highlight,
-    fontWeight: '600',
+  restoreButton: {
+    marginTop: 16,
+    padding: 16,
+    alignItems: 'center',
   },
-  infoTextSuperUltra: {
-    color: colors.superUltraGoldDeep,
-    fontWeight: '700',
+  restoreButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
   footer: {
     padding: 20,
@@ -853,7 +769,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.border,
   },
-  upgradeButton: {
+  purchaseButton: {
     backgroundColor: colors.primary,
     borderRadius: 12,
     padding: 16,
@@ -861,32 +777,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    overflow: 'hidden',
   },
-  upgradeButtonDisabled: {
-    opacity: 0.6,
-  },
-  upgradeButtonLifetime: {
-    backgroundColor: colors.highlight,
-  },
-  upgradeButtonGradient: {
-    width: '100%',
-    paddingVertical: 18,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  upgradeButtonText: {
+  purchaseButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
     color: colors.card,
-  },
-  upgradeButtonTextSuperUltra: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: colors.superUltraGoldDeep,
-    textShadow: `0px 1px 2px ${colors.superUltraGoldShine}`,
   },
 });

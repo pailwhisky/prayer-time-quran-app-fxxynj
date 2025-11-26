@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Alert,
   Animated,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
@@ -25,7 +26,7 @@ import DuaLibrary from '@/components/DuaLibrary';
 import HijriCalendar from '@/components/HijriCalendar';
 import ARQiblaCompass from '@/components/ARQiblaCompass';
 import NavigationHeader from '@/components/NavigationHeader';
-import FeatureVerificationTool from '@/components/FeatureVerificationTool';
+import { useRevenueCat } from '@/hooks/useRevenueCat';
 
 interface PremiumFeature {
   id: string;
@@ -124,8 +125,8 @@ const PREMIUM_FEATURES: PremiumFeature[] = [
 export default function PremiumScreen() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
-  const [showVerificationTool, setShowVerificationTool] = useState(false);
-  const { currentTier, cancelSubscription } = useSubscription();
+  const { currentTier } = useSubscription();
+  const { restore, loading: revenueCatLoading } = useRevenueCat();
   
   // Animation for Super Ultra status card
   const shimmerAnim = useRef(new Animated.Value(0)).current;
@@ -182,26 +183,25 @@ export default function PremiumScreen() {
     closeModal();
   };
 
-  const handleCancelSubscription = () => {
-    Alert.alert(
-      'Cancel Subscription',
-      'Are you sure you want to cancel your subscription? You will lose access to premium features.',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes, Cancel',
-          style: 'destructive',
-          onPress: async () => {
-            const success = await cancelSubscription();
-            if (success) {
-              Alert.alert('Subscription Cancelled', 'Your subscription has been cancelled.');
-            } else {
-              Alert.alert('Error', 'Failed to cancel subscription. Please try again.');
-            }
+  const handleManageSubscription = () => {
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      Alert.alert(
+        'Manage Subscription',
+        'To manage your subscription, please visit your device settings.',
+        [
+          {
+            text: 'Restore Purchases',
+            onPress: () => restore(),
           },
-        },
-      ]
-    );
+          { text: 'Cancel', style: 'cancel' },
+        ]
+      );
+    } else {
+      Alert.alert(
+        'Not Available',
+        'Subscription management is only available on iOS and Android devices.'
+      );
+    }
   };
 
   const shimmerOpacity = shimmerAnim.interpolate({
@@ -275,16 +275,9 @@ export default function PremiumScreen() {
             <View style={styles.buttonRow}>
               <TouchableOpacity
                 style={styles.manageSuperUltraButton}
-                onPress={handleCancelSubscription}
+                onPress={handleManageSubscription}
               >
                 <Text style={styles.manageSuperUltraButtonText}>Manage Subscription</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity
-                style={styles.verifySuperUltraButton}
-                onPress={() => setShowVerificationTool(true)}
-              >
-                <IconSymbol name="verified" size={20} color={colors.superUltraGold} />
               </TouchableOpacity>
             </View>
           </View>
@@ -322,21 +315,23 @@ export default function PremiumScreen() {
               <IconSymbol name="arrow-forward" size={20} color={colors.card} />
             </TouchableOpacity>
           ) : (
-            <TouchableOpacity
-              style={styles.manageButton}
-              onPress={handleCancelSubscription}
-            >
-              <Text style={styles.manageButtonText}>Manage Subscription</Text>
-            </TouchableOpacity>
+            <>
+              <TouchableOpacity
+                style={styles.manageButton}
+                onPress={handleManageSubscription}
+              >
+                <Text style={styles.manageButtonText}>Manage Subscription</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.restoreButton}
+                onPress={() => restore()}
+                disabled={revenueCatLoading}
+              >
+                <IconSymbol name="refresh" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            </>
           )}
-          
-          <TouchableOpacity
-            style={styles.verifyButton}
-            onPress={() => setShowVerificationTool(true)}
-          >
-            <IconSymbol name="verified" size={20} color={colors.primary} />
-            <Text style={styles.verifyButtonText}>Verify</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
@@ -431,11 +426,6 @@ export default function PremiumScreen() {
       <SubscriptionModal
         visible={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
-      />
-
-      <FeatureVerificationTool
-        visible={showVerificationTool}
-        onClose={() => setShowVerificationTool(false)}
       />
     </SafeAreaView>
   );
@@ -658,8 +648,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.superUltraGoldDeep,
   },
-  verifyButton: {
-    flexDirection: 'row',
+  restoreButton: {
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
@@ -668,22 +657,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1,
     borderColor: colors.primary,
-    gap: 6,
-  },
-  verifyButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  verifySuperUltraButton: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.superUltraGoldLight,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderWidth: 2,
-    borderColor: colors.superUltraGold,
   },
   sectionTitle: {
     fontSize: 22,

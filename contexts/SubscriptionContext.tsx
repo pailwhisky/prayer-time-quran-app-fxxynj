@@ -2,7 +2,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getCurrentEntitlements, IAPEntitlements } from '@/utils/appleIAPVerification';
+import { Platform } from 'react-native';
+import {
+  initializeRevenueCat,
+  loginRevenueCatUser,
+  logoutRevenueCatUser,
+  getCustomerInfo,
+  parseEntitlements,
+  RevenueCatEntitlements,
+} from '@/utils/revenueCatService';
+import Purchases, { CustomerInfo } from 'react-native-purchases';
 
 export type SubscriptionTier = 'free' | 'premium' | 'ultra' | 'super_ultra';
 
@@ -44,10 +53,9 @@ interface SubscriptionContextType {
   tiers: SubscriptionTierData[];
   features: SubscriptionFeature[];
   loading: boolean;
-  entitlements: IAPEntitlements | null;
+  entitlements: RevenueCatEntitlements | null;
+  customerInfo: CustomerInfo | null;
   hasFeature: (featureKey: string) => boolean;
-  upgradeTier: (tierName: SubscriptionTier, billingCycle: 'monthly' | 'yearly' | 'lifetime') => Promise<boolean>;
-  cancelSubscription: () => Promise<boolean>;
   refreshSubscription: () => Promise<void>;
   refreshEntitlements: () => Promise<void>;
 }
@@ -71,17 +79,51 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [tiers, setTiers] = useState<SubscriptionTierData[]>([]);
   const [features, setFeatures] = useState<SubscriptionFeature[]>([]);
-  const [entitlements, setEntitlements] = useState<IAPEntitlements | null>(null);
+  const [entitlements, setEntitlements] = useState<RevenueCatEntitlements | null>(null);
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadSubscriptionData();
+    initializeSubscriptionSystem();
   }, []);
+
+  const initializeSubscriptionSystem = async () => {
+    try {
+      setLoading(true);
+      console.log('Initializing subscription system...');
+
+      // Load subscription tiers and features from database
+      await loadSubscriptionData();
+
+      // Initialize RevenueCat
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user && (Platform.OS === 'ios' || Platform.OS === 'android')) {
+        try {
+          await initializeRevenueCat(user.id);
+          await loadRevenueCatEntitlements();
+        } catch (error) {
+          console.error('Error initializing RevenueCat:', error);
+          // Fall back to free tier
+          setCurrentTier('free');
+          setEntitlements(null);
+        }
+      } else {
+        console.log('No user logged in or unsupported platform, using free tier');
+        setCurrentTier('free');
+        setEntitlements(null);
+      }
+    } catch (error) {
+      console.error('Error initializing subscription system:', error);
+      setCurrentTier('free');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadSubscriptionData = async () => {
     try {
-      setLoading(true);
-      console.log('Loading subscription data...');
+      console.log('Loading subscription data from database...');
 
       // Load subscription tiers
       const { data: tiersData, error: tiersError } = await supabase
@@ -94,7 +136,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         console.error('Error loading tiers:', tiersError);
       } else {
         setTiers(tiersData || []);
-        console.log('Loaded tiers:', tiersData);
+        console.log('Loaded tiers:', tiersData?.length);
       }
 
       // Load subscription features
@@ -106,32 +148,16 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         console.error('Error loading features:', featuresError);
       } else {
         setFeatures(featuresData || []);
-        console.log('Loaded features:', featuresData);
+        console.log('Loaded features:', featuresData?.length);
       }
 
-      // Load user subscription and entitlements
+      // Load user subscription for UI display
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
-        // Fetch entitlements from the verification system
-        const entitlementsResult = await getCurrentEntitlements();
-        
-        if (entitlementsResult.success && entitlementsResult.entitlements) {
-          setEntitlements(entitlementsResult.entitlements);
-          const tierName = entitlementsResult.entitlements.tierName as SubscriptionTier;
-          setCurrentTier(tierName);
-          await AsyncStorage.setItem('subscription_tier', tierName);
-          console.log('User entitlements loaded:', entitlementsResult.entitlements);
-        } else {
-          console.log('Failed to load entitlements, using free tier');
-          setCurrentTier('free');
-          setEntitlements(null);
-        }
-
-        // Also load subscription data for UI display
         const { data: subData, error: subError } = await supabase
           .from('user_subscriptions')
-          .select('*, subscription_tiers(name)')
+          .select('*')
           .eq('user_id', user.id)
           .single();
 
@@ -140,23 +166,39 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         } else {
           setSubscription(null);
         }
-      } else {
-        console.log('No user logged in, using free tier');
-        setCurrentTier('free');
-        setSubscription(null);
-        setEntitlements(null);
       }
     } catch (error) {
       console.error('Error loading subscription data:', error);
+    }
+  };
+
+  const loadRevenueCatEntitlements = async () => {
+    try {
+      console.log('Loading RevenueCat entitlements...');
+      
+      const info = await getCustomerInfo();
+      setCustomerInfo(info);
+      
+      const parsedEntitlements = parseEntitlements(info);
+      setEntitlements(parsedEntitlements);
+      setCurrentTier(parsedEntitlements.tierName);
+      
+      await AsyncStorage.setItem('subscription_tier', parsedEntitlements.tierName);
+      console.log('RevenueCat entitlements loaded:', parsedEntitlements.tierName);
+    } catch (error) {
+      console.error('Error loading RevenueCat entitlements:', error);
       setCurrentTier('free');
-    } finally {
-      setLoading(false);
+      setEntitlements(null);
     }
   };
 
   const hasFeature = (featureKey: string): boolean => {
-    // For now, allow all features for free tier to test the app
-    // In production, you would check the actual feature requirements
+    // Check RevenueCat entitlements first
+    if (entitlements && entitlements.features.includes(featureKey)) {
+      return true;
+    }
+
+    // Fall back to database feature check
     const feature = features.find(f => f.feature_key === featureKey);
     
     if (!feature) {
@@ -179,118 +221,42 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     return hasAccess;
   };
 
-  const upgradeTier = async (tierName: SubscriptionTier, billingCycle: 'monthly' | 'yearly' | 'lifetime'): Promise<boolean> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error('User not logged in');
-        return false;
-      }
-
-      const tier = tiers.find(t => t.name === tierName);
-      if (!tier) {
-        console.error('Tier not found');
-        return false;
-      }
-
-      const startDate = new Date();
-      let endDate: Date | null = null;
-      
-      // Lifetime subscriptions don't have an end date
-      if (billingCycle !== 'lifetime') {
-        endDate = new Date();
-        if (billingCycle === 'monthly') {
-          endDate.setMonth(endDate.getMonth() + 1);
-        } else {
-          endDate.setFullYear(endDate.getFullYear() + 1);
-        }
-      }
-
-      const subscriptionData = {
-        user_id: user.id,
-        tier_id: tier.id,
-        status: 'active',
-        billing_cycle: billingCycle,
-        start_date: startDate.toISOString(),
-        end_date: endDate ? endDate.toISOString() : null,
-        auto_renew: billingCycle !== 'lifetime', // Lifetime doesn't auto-renew
-        payment_method: 'demo',
-        last_payment_date: startDate.toISOString(),
-        next_payment_date: endDate ? endDate.toISOString() : null,
-      };
-
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .upsert(subscriptionData, {
-          onConflict: 'user_id',
-        });
-
-      if (error) {
-        console.error('Error upgrading subscription:', error);
-        return false;
-      }
-
-      await loadSubscriptionData();
-      return true;
-    } catch (error) {
-      console.error('Error upgrading subscription:', error);
-      return false;
-    }
-  };
-
-  const cancelSubscription = async (): Promise<boolean> => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error('User not logged in');
-        return false;
-      }
-
-      const { error } = await supabase
-        .from('user_subscriptions')
-        .update({ 
-          status: 'cancelled',
-          auto_renew: false,
-        })
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error cancelling subscription:', error);
-        return false;
-      }
-
-      await loadSubscriptionData();
-      return true;
-    } catch (error) {
-      console.error('Error cancelling subscription:', error);
-      return false;
-    }
-  };
-
   const refreshSubscription = async () => {
     await loadSubscriptionData();
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      await loadRevenueCatEntitlements();
+    }
   };
 
   const refreshEntitlements = async () => {
-    try {
-      console.log('Refreshing entitlements...');
-      const entitlementsResult = await getCurrentEntitlements();
-      
-      if (entitlementsResult.success && entitlementsResult.entitlements) {
-        setEntitlements(entitlementsResult.entitlements);
-        const tierName = entitlementsResult.entitlements.tierName as SubscriptionTier;
-        setCurrentTier(tierName);
-        await AsyncStorage.setItem('subscription_tier', tierName);
-        console.log('Entitlements refreshed:', entitlementsResult.entitlements);
-      } else {
-        console.log('Failed to refresh entitlements');
-      }
-    } catch (error) {
-      console.error('Error refreshing entitlements:', error);
+    if (Platform.OS === 'ios' || Platform.OS === 'android') {
+      await loadRevenueCatEntitlements();
     }
   };
+
+  // Set up RevenueCat listener for purchase updates
+  useEffect(() => {
+    if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+      return;
+    }
+
+    const customerInfoUpdateListener = Purchases.addCustomerInfoUpdateListener(
+      async (info) => {
+        console.log('RevenueCat customer info updated');
+        setCustomerInfo(info);
+        
+        const parsedEntitlements = parseEntitlements(info);
+        setEntitlements(parsedEntitlements);
+        setCurrentTier(parsedEntitlements.tierName);
+        
+        await AsyncStorage.setItem('subscription_tier', parsedEntitlements.tierName);
+      }
+    );
+
+    return () => {
+      customerInfoUpdateListener.remove();
+    };
+  }, []);
 
   return (
     <SubscriptionContext.Provider
@@ -301,9 +267,8 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         features,
         loading,
         entitlements,
+        customerInfo,
         hasFeature,
-        upgradeTier,
-        cancelSubscription,
         refreshSubscription,
         refreshEntitlements,
       }}

@@ -1,5 +1,4 @@
 
-// Collection of inspirational Quran quotes related to prayer and faith
 const quranQuotes = [
   {
     text: "And establish prayer and give zakah and bow with those who bow.",
@@ -22,7 +21,7 @@ const quranQuotes = [
     arabic: "فَاذْكُرُونِي أَذْكُرْكُمْ"
   },
   {
-    text: "And it is He who created the heavens and earth in truth. And the day He says, 'Be,' and it is, His word is the truth.",
+    text: "And it is He who created the heavens and earth in truth.",
     reference: "Quran 6:73",
     arabic: "وَهُوَ الَّذِي خَلَقَ السَّمَاوَاتِ وَالْأَرْضَ بِالْحَقِّ"
   },
@@ -50,6 +49,31 @@ const quranQuotes = [
     text: "So be patient. Indeed, the promise of Allah is truth.",
     reference: "Quran 30:60",
     arabic: "فَاصْبِرْ إِنَّ وَعْدَ اللَّهِ حَقٌّ"
+  },
+  {
+    text: "Indeed, with hardship comes ease.",
+    reference: "Quran 94:6",
+    arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا"
+  },
+  {
+    text: "And He is with you wherever you are.",
+    reference: "Quran 57:4",
+    arabic: "وَهُوَ مَعَكُمْ أَيْنَ مَا كُنتُمْ"
+  },
+  {
+    text: "So which of the favors of your Lord would you deny?",
+    reference: "Quran 55:13",
+    arabic: "فَبِأَيِّ آلَاءِ رَبِّكُمَا تُكَذِّبَانِ"
+  },
+  {
+    text: "And He found you lost and guided you.",
+    reference: "Quran 93:7",
+    arabic: "وَوَجَدَكَ ضَالًّا فَهَدَىٰ"
+  },
+  {
+    text: "Indeed, Allah does not change the condition of a people until they change what is in themselves.",
+    reference: "Quran 13:11",
+    arabic: "إِنَّ اللَّهَ لَا يُغَيِّرُ مَا بِقَوْمٍ حَتَّىٰ يُغَيِّرُوا مَا بِأَنفُسِهِمْ"
   }
 ];
 
@@ -60,24 +84,23 @@ export interface QuranQuote {
 }
 
 export const fetchQuote = async (): Promise<QuranQuote> => {
-  // Simulate API call delay
   await new Promise(resolve => setTimeout(resolve, 500));
   
-  // Return a random quote from our collection
   const randomIndex = Math.floor(Math.random() * quranQuotes.length);
   return quranQuotes[randomIndex];
 };
 
 export const getQuoteForTime = (isBeforeFirstPrayer: boolean, isAfterLastPrayer: boolean): QuranQuote => {
   if (isBeforeFirstPrayer) {
-    // Morning/Fajr related quotes
-    return quranQuotes[0] || quranQuotes[7]; // Prayer establishment quotes
+    return quranQuotes[0] || quranQuotes[7];
   } else if (isAfterLastPrayer) {
-    // Evening/Night related quotes
-    return quranQuotes[1] || quranQuotes[3]; // Remembrance and peace quotes
+    return quranQuotes[1] || quranQuotes[3];
   } else {
-    // General faith quotes
     const randomIndex = Math.floor(Math.random() * quranQuotes.length);
     return quranQuotes[randomIndex];
   }
+};
+
+export const getAllQuotes = (): QuranQuote[] => {
+  return quranQuotes;
 };

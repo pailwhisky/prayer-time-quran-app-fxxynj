@@ -8,16 +8,14 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack, useNavigation } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useSubscription } from '@/contexts/SubscriptionContext';
 import { IconSymbol } from '@/components/IconSymbol';
-import PremiumGate from '@/components/PremiumGate';
 import NavigationHeader from '@/components/NavigationHeader';
+import { supabase } from '@/app/integrations/supabase/client';
 
 interface Surah {
   number: number;
@@ -28,39 +26,24 @@ interface Surah {
   revelationType: string;
 }
 
-const SURAHS: Surah[] = [
-  { number: 1, name: 'الفاتحة', englishName: 'Al-Fatihah', englishNameTranslation: 'The Opening', numberOfAyahs: 7, revelationType: 'Meccan' },
-  { number: 2, name: 'البقرة', englishName: 'Al-Baqarah', englishNameTranslation: 'The Cow', numberOfAyahs: 286, revelationType: 'Medinan' },
-  { number: 3, name: 'آل عمران', englishName: 'Ali \'Imran', englishNameTranslation: 'Family of Imran', numberOfAyahs: 200, revelationType: 'Medinan' },
-  { number: 4, name: 'النساء', englishName: 'An-Nisa', englishNameTranslation: 'The Women', numberOfAyahs: 176, revelationType: 'Medinan' },
-  { number: 5, name: 'المائدة', englishName: 'Al-Ma\'idah', englishNameTranslation: 'The Table Spread', numberOfAyahs: 120, revelationType: 'Medinan' },
-  { number: 6, name: 'الأنعام', englishName: 'Al-An\'am', englishNameTranslation: 'The Cattle', numberOfAyahs: 165, revelationType: 'Meccan' },
-  { number: 7, name: 'الأعراف', englishName: 'Al-A\'raf', englishNameTranslation: 'The Heights', numberOfAyahs: 206, revelationType: 'Meccan' },
-  { number: 8, name: 'الأنفال', englishName: 'Al-Anfal', englishNameTranslation: 'The Spoils of War', numberOfAyahs: 75, revelationType: 'Medinan' },
-  { number: 9, name: 'التوبة', englishName: 'At-Tawbah', englishNameTranslation: 'The Repentance', numberOfAyahs: 129, revelationType: 'Medinan' },
-  { number: 10, name: 'يونس', englishName: 'Yunus', englishNameTranslation: 'Jonah', numberOfAyahs: 109, revelationType: 'Meccan' },
-];
-
 export default function QuranScreen() {
-  const navigation = useNavigation();
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>(SURAHS);
+  const [surahs, setSurahs] = useState<Surah[]>([]);
+  const [filteredSurahs, setFilteredSurahs] = useState<Surah[]>([]);
   const [bookmarks, setBookmarks] = useState<number[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  // Add close button to header (only if this is a sub-page)
-  // Since quran.tsx is a root tab, we don't need the close button here
-  // But if you navigate to it from elsewhere, you might want it
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    loadSurahs();
     loadBookmarks();
   }, []);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
-      setFilteredSurahs(SURAHS);
+      setFilteredSurahs(surahs);
     } else {
-      const filtered = SURAHS.filter(
+      const filtered = surahs.filter(
         (surah) =>
           surah.englishName.toLowerCase().includes(searchQuery.toLowerCase()) ||
           surah.englishNameTranslation.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -68,7 +51,28 @@ export default function QuranScreen() {
       );
       setFilteredSurahs(filtered);
     }
-  }, [searchQuery]);
+  }, [searchQuery, surahs]);
+
+  const loadSurahs = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('quran-api/surahs');
+      
+      if (error) {
+        console.error('Error loading surahs:', error);
+        return;
+      }
+
+      if (data?.success && data?.data) {
+        setSurahs(data.data);
+        setFilteredSurahs(data.data);
+      }
+    } catch (error) {
+      console.error('Error loading surahs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const loadBookmarks = async () => {
     try {
@@ -96,6 +100,10 @@ export default function QuranScreen() {
     }
   };
 
+  const navigateToSurah = (surahNumber: number) => {
+    router.push(`/surah/${surahNumber}` as any);
+  };
+
   const renderSurahCard = (surah: Surah) => {
     const isBookmarked = bookmarks.includes(surah.number);
 
@@ -103,19 +111,7 @@ export default function QuranScreen() {
       <TouchableOpacity
         key={surah.number}
         style={styles.surahCard}
-        onPress={() => {
-          Alert.alert(
-            surah.englishName,
-            `${surah.englishNameTranslation}\n${surah.numberOfAyahs} verses\n${surah.revelationType}`,
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { 
-                text: isBookmarked ? 'Remove Bookmark' : 'Add Bookmark',
-                onPress: () => toggleBookmark(surah.number)
-              }
-            ]
-          );
-        }}
+        onPress={() => navigateToSurah(surah.number)}
       >
         <View style={styles.surahNumber}>
           <Text style={styles.surahNumberText}>{surah.number}</Text>
@@ -131,11 +127,15 @@ export default function QuranScreen() {
         </View>
 
         <TouchableOpacity 
-          onPress={() => toggleBookmark(surah.number)}
+          onPress={(e) => {
+            e.stopPropagation();
+            toggleBookmark(surah.number);
+          }}
           style={styles.bookmarkButton}
         >
           <IconSymbol 
-            name={isBookmarked ? "bookmark" : "bookmark-outline"} 
+            ios_icon_name={isBookmarked ? "bookmark.fill" : "bookmark"} 
+            android_material_icon_name={isBookmarked ? "bookmark" : "bookmark_border"}
             size={24} 
             color={isBookmarked ? colors.primary : colors.textSecondary} 
           />
@@ -161,7 +161,12 @@ export default function QuranScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.searchContainer}>
-          <IconSymbol name="search" size={20} color={colors.textSecondary} />
+          <IconSymbol 
+            ios_icon_name="magnifyingglass" 
+            android_material_icon_name="search"
+            size={20} 
+            color={colors.textSecondary} 
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search Surahs..."
@@ -171,16 +176,35 @@ export default function QuranScreen() {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <IconSymbol name="close" size={20} color={colors.textSecondary} />
+              <IconSymbol 
+                ios_icon_name="xmark.circle.fill" 
+                android_material_icon_name="cancel"
+                size={20} 
+                color={colors.textSecondary} 
+              />
             </TouchableOpacity>
           )}
+        </View>
+
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>114</Text>
+            <Text style={styles.statLabel}>Surahs</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>6,236</Text>
+            <Text style={styles.statLabel}>Verses</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statNumber}>{bookmarks.length}</Text>
+            <Text style={styles.statLabel}>Bookmarks</Text>
+          </View>
         </View>
 
         <View style={styles.surahList}>
           {filteredSurahs.map((surah) => renderSurahCard(surah))}
         </View>
 
-        {/* Bottom spacer for floating tab bar */}
         <View style={styles.bottomSpacer} />
       </ScrollView>
     );
@@ -196,10 +220,7 @@ export default function QuranScreen() {
         showClose={false}
       />
 
-      {/* Changed from premium to free tier - Quran reader is a basic feature */}
-      <PremiumGate featureKey="daily_quotes" featureName="Quran Reader" requiredTier="free">
-        {renderContent()}
-      </PremiumGate>
+      {renderContent()}
     </SafeAreaView>
   );
 }
@@ -244,6 +265,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textSecondary,
   },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  statNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
   surahList: {
     gap: 12,
   },
@@ -280,6 +326,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 4,
+    fontFamily: 'Amiri_700Bold',
   },
   surahNameEnglish: {
     fontSize: 16,

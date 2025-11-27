@@ -18,10 +18,8 @@ import {
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import * as Notifications from 'expo-notifications';
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-// Configure notification handler globally - MUST be done before any notification operations
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -47,7 +45,6 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  // Set up notification categories for iOS
   useEffect(() => {
     const setupNotificationCategories = async () => {
       if (Platform.OS === 'ios') {
@@ -87,6 +84,7 @@ export default function RootLayout() {
       <SubscriptionProvider>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="surah/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
           <Stack.Screen name="transparent-modal" options={{ presentation: 'transparentModal' }} />
           <Stack.Screen name="formsheet" options={{ presentation: 'formSheet' }} />

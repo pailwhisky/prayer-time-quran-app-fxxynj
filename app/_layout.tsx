@@ -16,6 +16,7 @@ import {
   NotoSansArabic_700Bold,
 } from '@expo-google-fonts/noto-sans-arabic';
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import * as Notifications from 'expo-notifications';
 
 SplashScreen.preventAutoHideAsync();
@@ -80,18 +81,20 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <SubscriptionProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="surah/[id]" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          <Stack.Screen name="transparent-modal" options={{ presentation: 'transparentModal' }} />
-          <Stack.Screen name="formsheet" options={{ presentation: 'formSheet' }} />
-          <Stack.Screen name="+not-found" />
-        </Stack>
-        <StatusBar style="auto" />
-      </SubscriptionProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <SubscriptionProvider>
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="surah/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            <Stack.Screen name="transparent-modal" options={{ presentation: 'transparentModal' }} />
+            <Stack.Screen name="formsheet" options={{ presentation: 'formSheet' }} />
+            <Stack.Screen name="+not-found" />
+          </Stack>
+          <StatusBar style="auto" />
+        </SubscriptionProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

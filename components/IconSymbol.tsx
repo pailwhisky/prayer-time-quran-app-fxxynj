@@ -18,7 +18,7 @@ const MAPPING = {
 
   // Navigation & Home
   "house.fill": "home",
-  "house": "home-outlined",
+  "house": "home",
   "arrow.left": "arrow-back",
   "arrow.right": "arrow-forward",
   "arrow.up": "arrow-upward",
@@ -32,11 +32,11 @@ const MAPPING = {
 
   // Communication & Social
   "paperplane.fill": "send",
-  "paperplane": "send-outlined",
+  "paperplane": "send",
   "envelope.fill": "mail",
   "envelope": "mail-outline",
   "phone.fill": "phone",
-  "phone": "phone-outlined",
+  "phone": "phone",
   "message.fill": "chat",
   "message": "chat-bubble-outline",
   "bell.fill": "notifications",
@@ -49,6 +49,7 @@ const MAPPING = {
   "plus": "add",
   "minus": "remove",
   "xmark": "close",
+  "xmark.circle.fill": "cancel",
   "close": "close",
   "checkmark": "check",
   "checkmark.circle.fill": "check-circle",
@@ -72,11 +73,11 @@ const MAPPING = {
 
   // Media & Content
   "photo.fill": "image",
-  "photo": "image-outlined",
+  "photo": "image",
   "camera.fill": "camera-alt",
   "camera": "camera-alt",
   "video.fill": "videocam",
-  "video": "videocam-off",
+  "video": "videocam",
   "music.note": "music-note",
   "speaker.wave.2.fill": "volume-up",
   "speaker.slash.fill": "volume-off",
@@ -89,14 +90,14 @@ const MAPPING = {
   "gearshape.fill": "settings",
   "slider.horizontal.3": "tune",
   "info.circle.fill": "info",
-  "info.circle": "info-outlined",
+  "info.circle": "info",
   "exclamationmark.triangle.fill": "warning",
   "exclamationmark.triangle": "warning-amber",
   "questionmark.circle.fill": "help",
   "questionmark.circle": "help-outline",
 
   // Shapes & Symbols
-  "square": "square",
+  "square": "crop-square",
   "square.grid.3x3": "apps",
   "circle": "circle",
   "triangle.fill": "change-history",
@@ -109,7 +110,7 @@ const MAPPING = {
 
   // Technology & Code
   "chevron.left.forwardslash.chevron.right": "code",
-  "qrcode.viewfinder": "qr-code",
+  "qrcode.viewfinder": "qr-code-scanner",
   "wifi": "wifi",
   "antenna.radiowaves.left.and.right": "signal-cellular-alt",
   "battery.100": "battery-full",
@@ -119,7 +120,7 @@ const MAPPING = {
 
   // Shopping & Commerce
   "cart.fill": "shopping-cart",
-  "cart": "shopping-cart-outlined",
+  "cart": "shopping-cart",
   "creditcard.fill": "credit-card",
   "creditcard": "credit-card",
   "dollarsign.circle.fill": "monetization-on",
@@ -166,6 +167,30 @@ const MAPPING = {
   "lightbulb.fill": "lightbulb",
   "moon.fill": "dark-mode",
   "sun.max.fill": "light-mode",
+
+  // Additional icons used in the app
+  "book.closed": "menu-book",
+  "book.fill": "menu-book",
+  "book.open": "menu-book",
+  "book": "menu-book",
+  "infinity": "all-inclusive",
+  "rocket": "rocket-launch",
+  "headphones": "headset",
+  "cpu": "memory",
+  "trending-up": "trending-up",
+  "users": "group",
+  "user-check": "person-add",
+  "palette": "palette",
+  "download": "download",
+  "brain": "psychology",
+  "map-pin": "place",
+  "message-circle": "chat-bubble",
+  "quote": "format-quote",
+  "compass": "explore",
+  "award": "emoji-events",
+  "error": "error",
+  "check-circle": "check-circle",
+  "check-circle-outline": "check-circle-outline",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],

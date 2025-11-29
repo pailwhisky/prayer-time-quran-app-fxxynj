@@ -11,7 +11,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { colors } from '@/styles/commonStyles';
 import AdhanPlayer from '@/components/AdhanPlayer';
 import VerseOfTheDay from '@/components/VerseOfTheDay';
@@ -27,6 +27,7 @@ import { useRevenueCatPaywall } from '@/hooks/useRevenueCatPaywall';
 import { useRevenueCatCustomerCenter } from '@/hooks/useRevenueCatCustomerCenter';
 import SubscriptionStatus from '@/components/premium/SubscriptionStatus';
 import FeatureCard from '@/components/premium/FeatureCard';
+import ExperimentTracker from '@/components/premium/ExperimentTracker';
 import { PREMIUM_FEATURES, PremiumFeature } from '@/constants/premiumFeatures';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -37,12 +38,15 @@ import { IconSymbol } from '@/components/IconSymbol';
  * - RevenueCat Paywall for upgrades (instead of custom modal)
  * - Customer Center for subscription management
  * - Feature gates with automatic paywall display
+ * - A/B Testing with Experiments
+ * - Advanced Analytics tracking
  */
 export default function PremiumScreenWithPaywall() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const { currentTier, hasFeature } = useSubscription();
   const { showPaywall, showPaywallIfNeeded, loading: paywallLoading } = useRevenueCatPaywall();
   const { showCustomerCenter, loading: customerCenterLoading } = useRevenueCatCustomerCenter();
+  const router = useRouter();
 
   const loading = paywallLoading || customerCenterLoading;
 
@@ -95,6 +99,10 @@ export default function PremiumScreenWithPaywall() {
     }
   };
 
+  const handleViewAnalytics = () => {
+    router.push('/(tabs)/analytics');
+  };
+
   const renderFeatureCard: ListRenderItem<PremiumFeature> = ({ item }) => (
     <FeatureCard feature={item} onPress={openFeature} />
   );
@@ -109,6 +117,13 @@ export default function PremiumScreenWithPaywall() {
         isLoading={loading}
       />
       
+      {/* A/B Test Experiment Tracker */}
+      <ExperimentTracker
+        onExperimentLoaded={(experimentId) => {
+          console.log('Experiment loaded:', experimentId);
+        }}
+      />
+
       {/* Quick Actions */}
       <View style={styles.quickActions}>
         <TouchableOpacity
@@ -131,6 +146,16 @@ export default function PremiumScreenWithPaywall() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Analytics Link */}
+      <TouchableOpacity
+        style={styles.analyticsLink}
+        onPress={handleViewAnalytics}
+      >
+        <IconSymbol name="bar-chart" size={20} color={colors.primary} />
+        <Text style={styles.analyticsLinkText}>View Subscription Analytics</Text>
+        <IconSymbol name="chevron-right" size={20} color={colors.textSecondary} />
+      </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>Available Features</Text>
     </>
@@ -242,7 +267,7 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     gap: 12,
-    marginBottom: 24,
+    marginBottom: 16,
   },
   quickActionButton: {
     flex: 1,
@@ -268,6 +293,23 @@ const styles = StyleSheet.create({
   },
   quickActionTextSecondary: {
     color: colors.primary,
+  },
+  analyticsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  analyticsLinkText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: colors.text,
+    marginLeft: 12,
   },
   sectionTitle: {
     fontSize: 22,

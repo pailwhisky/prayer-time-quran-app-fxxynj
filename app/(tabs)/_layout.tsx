@@ -2,56 +2,101 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
-import FloatingTabBar from '@/components/FloatingTabBar';
+import { HapticTab } from '@/components/HapticTab';
+import { IconSymbol } from '@/components/IconSymbol';
+import { colors } from '@/styles/commonStyles';
 
 export default function TabLayout() {
-  const tabs = [
-    {
-      name: '(home)',
-      route: '/(tabs)/(home)',
-      icon: 'home',
-      label: 'Home',
-    },
-    {
-      name: 'quran',
-      route: '/(tabs)/quran',
-      icon: 'menu-book',
-      label: 'Quran',
-    },
-    {
-      name: 'premium',
-      route: '/(tabs)/premium',
-      icon: 'star',
-      label: 'Premium',
-    },
-    {
-      name: 'profile',
-      route: '/(tabs)/profile',
-      icon: 'person',
-      label: 'Profile',
-    },
-  ];
-
   return (
-    <>
-      <Tabs
-        screenOptions={{
-          headerShown: false,
-          tabBarStyle: { display: 'none' },
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarStyle: Platform.select({
+          ios: {
+            position: 'absolute',
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+          },
+          default: {
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+          },
+        }),
+      }}
+    >
+      <Tabs.Screen
+        name="(home)"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              ios_icon_name="house.fill"
+              android_material_icon_name="home"
+              size={28}
+              color={color}
+            />
+          ),
         }}
-      >
-        <Tabs.Screen name="(home)" options={{ headerShown: false }} />
-        <Tabs.Screen name="quran" options={{ headerShown: false }} />
-        <Tabs.Screen name="premium" options={{ headerShown: false }} />
-        <Tabs.Screen name="profile" options={{ headerShown: false }} />
-      </Tabs>
-      
-      <FloatingTabBar
-        tabs={tabs}
-        containerWidth={340}
-        borderRadius={28}
-        bottomMargin={Platform.OS === 'ios' ? 10 : 20}
       />
-    </>
+      <Tabs.Screen
+        name="quran"
+        options={{
+          title: 'Quran',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              ios_icon_name="book.fill"
+              android_material_icon_name="book"
+              size={28}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="premium-with-paywall"
+        options={{
+          title: 'Premium',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              ios_icon_name="star.fill"
+              android_material_icon_name="star"
+              size={28}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => (
+            <IconSymbol
+              ios_icon_name="person.fill"
+              android_material_icon_name="person"
+              size={28}
+              color={color}
+            />
+          ),
+        }}
+      />
+      
+      {/* Hidden tabs */}
+      <Tabs.Screen
+        name="premium"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="analytics"
+        options={{
+          href: null,
+        }}
+      />
+    </Tabs>
   );
 }

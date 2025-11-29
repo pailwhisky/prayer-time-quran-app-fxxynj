@@ -8,9 +8,18 @@ import Purchases, {
 import { Platform } from 'react-native';
 import { supabase } from '@/app/integrations/supabase/client';
 
-// RevenueCat API Keys - These should be set in your .env file
-// For iOS: REVENUECAT_IOS_API_KEY
-// For Android: REVENUECAT_ANDROID_API_KEY
+/**
+ * RevenueCat API Keys Configuration
+ * 
+ * SECURITY NOTE: RevenueCat API keys are PUBLIC keys and are safe to expose.
+ * They work similarly to your Supabase anon key - they identify your app
+ * but don't grant privileged access. The actual subscription verification
+ * and entitlement management happens on RevenueCat's servers.
+ * 
+ * These keys should be set in your .env file:
+ * - EXPO_PUBLIC_REVENUECAT_IOS_API_KEY
+ * - EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY
+ */
 const REVENUECAT_IOS_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY || '';
 const REVENUECAT_ANDROID_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY || '';
 

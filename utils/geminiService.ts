@@ -4,8 +4,16 @@ import { supabase } from '@/app/integrations/supabase/client';
 /**
  * AI Service - Premium Feature
  * 
- * All AI features are powered by our backend API and require a premium subscription.
+ * SECURITY: All AI features are powered by our secure backend API.
+ * The Google AI API key is stored securely in Supabase Edge Function environment variables.
  * Users cannot configure AI settings directly - this is managed server-side.
+ * 
+ * This approach ensures:
+ * - API keys are never exposed in client code
+ * - API keys are not included in app bundles
+ * - API keys cannot be extracted from network requests
+ * - Centralized control over AI feature access
+ * - Subscription-based access control
  */
 
 const AI_SERVICE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL 
@@ -14,6 +22,7 @@ const AI_SERVICE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL
 
 /**
  * Call our backend AI service
+ * The backend handles authentication, subscription verification, and API key management
  */
 async function callAIService(type: string, payload?: any): Promise<any> {
   try {

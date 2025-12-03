@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/styles/commonStyles';
@@ -7,12 +7,16 @@ import { IconSymbol } from '@/components/IconSymbol';
 import { SUBSCRIPTION_TIERS } from '@/constants/premiumFeatures';
 
 export default function TierComparisonCard() {
-  // Get unique tiers (excluding free, and combining iman monthly/lifetime)
+  // State to track which pricing option is selected for Iman tier
+  const [imanPricingOption, setImanPricingOption] = useState<'monthly' | 'lifetime'>('monthly');
+
+  // Get unique tiers
   const ihsanTier = SUBSCRIPTION_TIERS.find(t => t.id === 'ihsan');
   const imanMonthlyTier = SUBSCRIPTION_TIERS.find(t => t.id === 'iman');
   const imanLifetimeTier = SUBSCRIPTION_TIERS.find(t => t.id === 'iman_lifetime');
 
-  const displayTiers = [ihsanTier, imanMonthlyTier, imanLifetimeTier].filter(Boolean);
+  // Display only 2 cards: Ihsan and Iman (with pricing toggle)
+  const displayTiers = [ihsanTier, imanMonthlyTier].filter(Boolean);
 
   return (
     <View style={styles.container}>
@@ -27,8 +31,13 @@ export default function TierComparisonCard() {
         {displayTiers.map((tier) => {
           if (!tier) return null;
           
-          const isIman = tier.id === 'iman' || tier.id === 'iman_lifetime';
-          const isLifetime = tier.id === 'iman_lifetime';
+          const isIman = tier.id === 'iman';
+          
+          // For Iman tier, use the selected pricing option
+          const displayTier = isIman && imanPricingOption === 'lifetime' ? imanLifetimeTier : tier;
+          if (!displayTier) return null;
+
+          const isLifetime = displayTier.id === 'iman_lifetime';
 
           return (
             <View 
@@ -36,20 +45,45 @@ export default function TierComparisonCard() {
               style={[
                 styles.tierCard,
                 isIman && styles.tierCardIman,
-                isLifetime && styles.tierCardLifetime,
               ]}
             >
-              {isLifetime && (
-                <LinearGradient
-                  colors={[colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.lifetimeBanner}
-                >
-                  <IconSymbol ios_icon_name="star.fill" android_material_icon_name="star" size={14} color={colors.superUltraGoldDeep} />
-                  <Text style={styles.lifetimeBannerText}>LIFETIME ACCESS</Text>
-                  <IconSymbol ios_icon_name="star.fill" android_material_icon_name="star" size={14} color={colors.superUltraGoldDeep} />
-                </LinearGradient>
+              {isIman && (
+                <View style={styles.pricingToggleContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.pricingToggleButton,
+                      imanPricingOption === 'monthly' && styles.pricingToggleButtonActive,
+                    ]}
+                    onPress={() => setImanPricingOption('monthly')}
+                  >
+                    <Text style={[
+                      styles.pricingToggleText,
+                      imanPricingOption === 'monthly' && styles.pricingToggleTextActive,
+                    ]}>
+                      Monthly
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.pricingToggleButton,
+                      imanPricingOption === 'lifetime' && styles.pricingToggleButtonActive,
+                    ]}
+                    onPress={() => setImanPricingOption('lifetime')}
+                  >
+                    <IconSymbol 
+                      ios_icon_name="star.fill" 
+                      android_material_icon_name="star" 
+                      size={12} 
+                      color={imanPricingOption === 'lifetime' ? colors.superUltraGoldDeep : colors.textSecondary} 
+                    />
+                    <Text style={[
+                      styles.pricingToggleText,
+                      imanPricingOption === 'lifetime' && styles.pricingToggleTextActive,
+                    ]}>
+                      Lifetime
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               )}
 
               <View style={styles.tierHeader}>
@@ -57,17 +91,28 @@ export default function TierComparisonCard() {
                   ios_icon_name={tier.id === 'ihsan' ? 'star.fill' : 'crown.fill'}
                   android_material_icon_name={tier.id === 'ihsan' ? 'star' : 'workspace_premium'}
                   size={32} 
-                  color={isIman ? colors.superUltraGold : tier.color} 
+                  color={isIman ? colors.superUltraGold : displayTier.color} 
                 />
                 <Text style={[styles.tierName, isIman && styles.tierNameIman]}>
-                  {tier.displayName}
+                  {isIman ? 'Iman - Faith' : displayTier.displayName}
                 </Text>
                 <Text style={[styles.tierPrice, isIman && styles.tierPriceIman]}>
-                  {tier.price}
+                  {displayTier.price}
                 </Text>
-                <Text style={styles.tierPriceDetail}>{tier.priceDetail}</Text>
+                <Text style={styles.tierPriceDetail}>{displayTier.priceDetail}</Text>
+                {isLifetime && (
+                  <View style={styles.savingsBadgeInline}>
+                    <IconSymbol 
+                      ios_icon_name="arrow.down.circle.fill"
+                      android_material_icon_name="trending_down"
+                      size={14} 
+                      color={colors.superUltraGoldDeep} 
+                    />
+                    <Text style={styles.savingsTextInline}>Save $350+ vs monthly</Text>
+                  </View>
+                )}
                 <Text style={[styles.tierTagline, isIman && styles.tierTaglineIman]}>
-                  {tier.tagline}
+                  {displayTier.tagline}
                 </Text>
               </View>
 
@@ -75,7 +120,7 @@ export default function TierComparisonCard() {
 
               <View style={styles.featuresSection}>
                 <Text style={styles.featuresTitle}>Features:</Text>
-                {tier.features
+                {displayTier.features
                   .filter(f => f.included)
                   .slice(0, 8)
                   .map((feature, index) => (
@@ -89,9 +134,9 @@ export default function TierComparisonCard() {
                       <Text style={styles.featureName}>{feature.name}</Text>
                     </View>
                   ))}
-                {tier.features.filter(f => f.included).length > 8 && (
+                {displayTier.features.filter(f => f.included).length > 8 && (
                   <Text style={styles.moreFeatures}>
-                    + {tier.features.filter(f => f.included).length - 8} more features
+                    + {displayTier.features.filter(f => f.included).length - 8} more features
                   </Text>
                 )}
               </View>
@@ -99,7 +144,7 @@ export default function TierComparisonCard() {
               <View style={styles.divider} />
 
               <View style={styles.highlightsSection}>
-                {tier.highlights.slice(0, 4).map((highlight, index) => (
+                {displayTier.highlights.slice(0, 4).map((highlight, index) => (
                   <View key={index} style={styles.highlightRow}>
                     <IconSymbol 
                       ios_icon_name="star.fill"
@@ -111,18 +156,6 @@ export default function TierComparisonCard() {
                   </View>
                 ))}
               </View>
-
-              {isLifetime && (
-                <View style={styles.savingsBadge}>
-                  <IconSymbol 
-                    ios_icon_name="arrow.down.circle.fill"
-                    android_material_icon_name="trending_down"
-                    size={16} 
-                    color={colors.superUltraGoldDeep} 
-                  />
-                  <Text style={styles.savingsText}>Save $350+ vs monthly</Text>
-                </View>
-              )}
             </View>
           );
         })}
@@ -169,27 +202,35 @@ const styles = StyleSheet.create({
     boxShadow: `0 8px 24px ${colors.superUltraGold}80`,
     elevation: 8,
   },
-  tierCardLifetime: {
-    paddingTop: 48,
-  },
-  lifetimeBanner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingVertical: 10,
+  pricingToggleContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    gap: 4,
   },
-  lifetimeBannerText: {
-    fontSize: 11,
-    fontWeight: 'bold',
+  pricingToggleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    gap: 4,
+  },
+  pricingToggleButtonActive: {
+    backgroundColor: colors.superUltraGold,
+  },
+  pricingToggleText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  pricingToggleTextActive: {
     color: colors.superUltraGoldDeep,
-    letterSpacing: 1,
+    fontWeight: 'bold',
   },
   tierHeader: {
     alignItems: 'center',
@@ -221,6 +262,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginBottom: 8,
+  },
+  savingsBadgeInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 4,
+    marginBottom: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    backgroundColor: colors.superUltraGoldLight,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.superUltraGold,
+  },
+  savingsTextInline: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.superUltraGoldDeep,
   },
   tierTagline: {
     fontSize: 14,
@@ -277,23 +337,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     lineHeight: 18,
-  },
-  savingsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    marginTop: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: colors.superUltraGoldLight,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: colors.superUltraGold,
-  },
-  savingsText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.superUltraGoldDeep,
   },
 });

@@ -24,7 +24,7 @@ const REVENUECAT_API_KEY = 'test_amHZgULphTOfAXgpIlAcujAxXvZ';
 // Entitlement identifier - this should match what you configure in RevenueCat Dashboard
 export const ENTITLEMENT_ID = 'my prayer Pro';
 
-export type SubscriptionTier = 'free' | 'premium' | 'ultra' | 'super_ultra';
+export type SubscriptionTier = 'free' | 'ihsan' | 'iman';
 
 export interface RevenueCatEntitlements {
   hasAccess: boolean;
@@ -271,6 +271,10 @@ export function hasMyPrayerProAccess(customerInfo: CustomerInfo): boolean {
  * Parse RevenueCat customer info into app entitlements
  * Maps RevenueCat entitlements to your app's tier system
  * 
+ * Tier Mapping:
+ * - $9.99 tier -> "Ihsan" (excellence in worship)
+ * - $888 tier -> "Iman" (faith/belief)
+ * 
  * @param customerInfo - Customer info from RevenueCat
  * @returns Parsed entitlements with tier and features
  */
@@ -290,8 +294,10 @@ export function parseEntitlements(customerInfo: CustomerInfo): RevenueCatEntitle
     // Determine tier based on product identifier
     const productId = myPrayerPro.productIdentifier.toLowerCase();
     
-    if (productId.includes('super_ultra') || productId.includes('superultra')) {
-      tierName = 'super_ultra';
+    // $888 tier -> Iman (highest tier)
+    if (productId.includes('super_ultra') || productId.includes('superultra') || 
+        productId.includes('iman') || productId.includes('888')) {
+      tierName = 'iman';
       features = [
         'lifetime_access',
         'all_premium_features',
@@ -308,19 +314,10 @@ export function parseEntitlements(customerInfo: CustomerInfo): RevenueCatEntitle
         'offline_quran_audio',
         'advanced_memorization_tools',
       ];
-    } else if (productId.includes('ultra')) {
-      tierName = 'ultra';
-      features = [
-        'all_premium_features',
-        'advanced_notifications',
-        'mosque_finder',
-        'hijri_calendar',
-        'ai_assistant',
-        'daily_hadith',
-        'enhanced_quotes',
-      ];
-    } else {
-      tierName = 'premium';
+    } 
+    // $9.99 tier -> Ihsan
+    else {
+      tierName = 'ihsan';
       features = [
         'prayer_times',
         'quran_reader',
@@ -329,6 +326,12 @@ export function parseEntitlements(customerInfo: CustomerInfo): RevenueCatEntitle
         'ar_qibla',
         'dua_library',
         'islamic_calendar',
+        'advanced_notifications',
+        'mosque_finder',
+        'hijri_calendar',
+        'ai_assistant',
+        'daily_hadith',
+        'enhanced_quotes',
       ];
     }
     

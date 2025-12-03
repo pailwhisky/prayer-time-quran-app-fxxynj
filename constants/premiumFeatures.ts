@@ -9,7 +9,7 @@ export interface PremiumFeature {
   color: string;
   component: string;
   featureKey: string;
-  requiredTier: 'premium' | 'ultra';
+  requiredTier: 'ihsan' | 'iman';
 }
 
 export const PREMIUM_FEATURES: PremiumFeature[] = [
@@ -21,7 +21,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.primary,
     component: 'AdhanPlayer',
     featureKey: 'adhan_player',
-    requiredTier: 'premium',
+    requiredTier: 'ihsan',
   },
   {
     id: '2',
@@ -31,7 +31,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.accent,
     component: 'ARQiblaCompass',
     featureKey: 'ar_qibla',
-    requiredTier: 'premium',
+    requiredTier: 'ihsan',
   },
   {
     id: '3',
@@ -41,7 +41,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.highlight,
     component: 'DuaLibrary',
     featureKey: 'dua_library',
-    requiredTier: 'premium',
+    requiredTier: 'ihsan',
   },
   {
     id: '4',
@@ -51,7 +51,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.secondary,
     component: 'HijriCalendar',
     featureKey: 'islamic_calendar',
-    requiredTier: 'premium',
+    requiredTier: 'ihsan',
   },
   {
     id: '5',
@@ -61,7 +61,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.primary,
     component: 'MosqueFinder',
     featureKey: 'mosque_finder',
-    requiredTier: 'premium',
+    requiredTier: 'ihsan',
   },
   {
     id: '6',
@@ -71,7 +71,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.accent,
     component: 'SpiritualProgressTracker',
     featureKey: 'prayer_stats',
-    requiredTier: 'premium',
+    requiredTier: 'ihsan',
   },
   {
     id: '7',
@@ -81,7 +81,7 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.highlight,
     component: 'AdvancedNotifications',
     featureKey: 'custom_notifications',
-    requiredTier: 'premium',
+    requiredTier: 'ihsan',
   },
   {
     id: '8',
@@ -91,6 +91,6 @@ export const PREMIUM_FEATURES: PremiumFeature[] = [
     color: colors.secondary,
     component: 'VerseOfTheDay',
     featureKey: 'verse_of_day',
-    requiredTier: 'ultra',
+    requiredTier: 'iman',
   },
 ];

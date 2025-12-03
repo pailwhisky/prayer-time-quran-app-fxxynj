@@ -49,27 +49,6 @@ export default function PremiumScreen() {
     closeModal();
   };
 
-  const handleManageSubscription = () => {
-    if (Platform.OS === 'ios' || Platform.OS === 'android') {
-      Alert.alert(
-        'Manage Subscription',
-        'To manage your subscription, please visit your device settings.',
-        [
-          {
-            text: 'Restore Purchases',
-            onPress: handleRestorePurchases,
-          },
-          { text: 'Cancel', style: 'cancel' },
-        ]
-      );
-    } else {
-      Alert.alert(
-        'Not Available',
-        'Subscription management is only available on iOS and Android devices.'
-      );
-    }
-  };
-
   const handleRestorePurchases = async () => {
     try {
       Alert.alert('Please wait...', 'Restoring your purchases');
@@ -88,7 +67,7 @@ export default function PremiumScreen() {
       <SubscriptionStatus
         currentTier={currentTier}
         onUpgrade={() => setShowSubscriptionModal(true)}
-        onManageSubscription={handleManageSubscription}
+        onManageSubscription={() => {}}
         onRestore={handleRestorePurchases}
         isLoading={revenueCatLoading}
       />

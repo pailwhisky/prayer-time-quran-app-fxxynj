@@ -29,10 +29,10 @@ export default function SubscriptionStatus({
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const isSuperUltra = currentTier === 'super_ultra';
+  const isIman = currentTier === 'iman';
 
   useEffect(() => {
-    if (isSuperUltra) {
+    if (isIman) {
       // Shimmer animation
       Animated.loop(
         Animated.sequence([
@@ -65,17 +65,17 @@ export default function SubscriptionStatus({
         ])
       ).start();
     }
-  }, [isSuperUltra, shimmerAnim, pulseAnim]);
+  }, [isIman, shimmerAnim, pulseAnim]);
 
   const shimmerOpacity = shimmerAnim.interpolate({
     inputRange: [0, 1],
     outputRange: [0.2, 0.6],
   });
 
-  if (isSuperUltra) {
+  if (isIman) {
     return (
       <Animated.View style={[{ transform: [{ scale: pulseAnim }] }]}>
-        <View style={styles.subscriptionStatusSuperUltra}>
+        <View style={styles.subscriptionStatusIman}>
           {/* Gold shimmer overlay */}
           <Animated.View 
             style={[
@@ -94,15 +94,15 @@ export default function SubscriptionStatus({
             colors={[colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.superUltraBanner}
+            style={styles.imanBanner}
           >
             <IconSymbol name="crown" size={24} color={colors.superUltraGoldDeep} />
-            <Text style={styles.superUltraBannerText}>✨ SUPER ULTRA MEMBER ✨</Text>
+            <Text style={styles.imanBannerText}>✨ IMAN MEMBER ✨</Text>
             <IconSymbol name="star" size={24} color={colors.superUltraGoldDeep} />
           </LinearGradient>
 
           <View style={styles.statusHeader}>
-            <View style={styles.superUltraIconContainer}>
+            <View style={styles.imanIconContainer}>
               <IconSymbol
                 name="check-circle"
                 size={40}
@@ -110,16 +110,16 @@ export default function SubscriptionStatus({
               />
             </View>
             <View style={styles.statusInfo}>
-              <Text style={styles.statusTitleSuperUltra}>
-                👑 Super Ultra Plan 👑
+              <Text style={styles.statusTitleIman}>
+                👑 Iman Plan 👑
               </Text>
-              <Text style={styles.statusDescriptionSuperUltra}>
+              <Text style={styles.statusDescriptionIman}>
                 Lifetime access to all premium features!
               </Text>
             </View>
           </View>
 
-          <View style={styles.superUltraPerks}>
+          <View style={styles.imanPerks}>
             <View style={styles.perkItem}>
               <IconSymbol name="infinity" size={20} color={colors.superUltraGold} />
               <Text style={styles.perkText}>Lifetime Access</Text>
@@ -132,15 +132,6 @@ export default function SubscriptionStatus({
               <IconSymbol name="award" size={20} color={colors.superUltraGold} />
               <Text style={styles.perkText}>Priority Support</Text>
             </View>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.manageSuperUltraButton}
-              onPress={onManageSubscription}
-            >
-              <Text style={styles.manageSuperUltraButtonText}>Manage Subscription</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Animated.View>
@@ -177,22 +168,14 @@ export default function SubscriptionStatus({
             <IconSymbol name="arrow-forward" size={20} color={colors.card} />
           </TouchableOpacity>
         ) : (
-          <>
-            <TouchableOpacity
-              style={styles.manageButton}
-              onPress={onManageSubscription}
-            >
-              <Text style={styles.manageButtonText}>Manage Subscription</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.restoreButton}
-              onPress={onRestore}
-              disabled={isLoading}
-            >
-              <IconSymbol name="refresh" size={20} color={colors.primary} />
-            </TouchableOpacity>
-          </>
+          <TouchableOpacity
+            style={styles.restoreButton}
+            onPress={onRestore}
+            disabled={isLoading}
+          >
+            <IconSymbol name="refresh" size={20} color={colors.primary} />
+            <Text style={styles.restoreButtonText}>Restore Purchases</Text>
+          </TouchableOpacity>
         )}
       </View>
     </View>
@@ -210,7 +193,7 @@ const styles = StyleSheet.create({
     boxShadow: `0 4px 8px ${colors.shadow}`,
     elevation: 3,
   },
-  subscriptionStatusSuperUltra: {
+  subscriptionStatusIman: {
     backgroundColor: colors.superUltraGoldPale,
     borderRadius: 20,
     padding: 24,
@@ -274,7 +257,7 @@ const styles = StyleSheet.create({
     borderColor: colors.superUltraGold,
     borderBottomRightRadius: 20,
   },
-  superUltraBanner: {
+  imanBanner: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
@@ -284,7 +267,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     boxShadow: `0 4px 12px ${colors.superUltraGold}60`,
   },
-  superUltraBannerText: {
+  imanBannerText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: colors.superUltraGoldDeep,
@@ -296,7 +279,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  superUltraIconContainer: {
+  imanIconContainer: {
     width: 64,
     height: 64,
     borderRadius: 32,
@@ -317,7 +300,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
-  statusTitleSuperUltra: {
+  statusTitleIman: {
     fontSize: 22,
     fontWeight: 'bold',
     color: colors.superUltraGoldDeep,
@@ -328,12 +311,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-  statusDescriptionSuperUltra: {
+  statusDescriptionIman: {
     fontSize: 15,
     fontWeight: '600',
     color: colors.superUltraGoldDark,
   },
-  superUltraPerks: {
+  imanPerks: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginBottom: 20,
@@ -373,46 +356,22 @@ const styles = StyleSheet.create({
     color: colors.card,
     marginRight: 8,
   },
-  manageButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  manageButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  manageSuperUltraButton: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.superUltraGoldLight,
-    borderRadius: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderWidth: 2,
-    borderColor: colors.superUltraGold,
-  },
-  manageSuperUltraButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.superUltraGoldDeep,
-  },
   restoreButton: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
     borderRadius: 12,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
     borderWidth: 1,
     borderColor: colors.primary,
+    gap: 8,
+  },
+  restoreButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.primary,
   },
 });

@@ -35,7 +35,7 @@ export default function SubscriptionModal({
   const { offerings, loadOfferings, purchase, restore, loading: revenueCatLoading } = useRevenueCat();
   const [selectedPackage, setSelectedPackage] = useState<any>(null);
   
-  // Animation values for Super Ultra shimmer effect
+  // Animation values for Iman shimmer effect
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -123,10 +123,21 @@ export default function SubscriptionModal({
     return iconMap[feature] || 'check';
   };
 
+  const getTierDisplayName = (tierName: string) => {
+    const nameMap: { [key: string]: string } = {
+      'premium': 'Ihsan',
+      'ultra': 'Ihsan',
+      'super_ultra': 'Iman',
+      'iman': 'Iman',
+      'ihsan': 'Ihsan',
+    };
+    return nameMap[tierName.toLowerCase()] || tierName;
+  };
+
   const renderPackageCard = (pkg: any, tier: any) => {
     const isSelected = selectedPackage?.identifier === pkg.identifier;
     const isCurrentTier = tier.name === currentTier;
-    const isSuperUltra = tier.name === 'super_ultra';
+    const isIman = tier.name === 'super_ultra' || tier.name === 'iman';
     
     const shimmerOpacity = shimmerAnim.interpolate({
       inputRange: [0, 1],
@@ -139,11 +150,13 @@ export default function SubscriptionModal({
                    pkg.packageType === 'MONTHLY' ? '/month' : 
                    pkg.packageType === 'LIFETIME' ? ' one-time' : '';
 
+    const displayName = getTierDisplayName(tier.name);
+
     return (
       <Animated.View
         key={pkg.identifier}
         style={[
-          isSuperUltra && { transform: [{ scale: pulseAnim }] }
+          isIman && { transform: [{ scale: pulseAnim }] }
         ]}
       >
         <TouchableOpacity
@@ -152,12 +165,12 @@ export default function SubscriptionModal({
             isSelected && styles.tierCardSelected,
             isCurrentTier && styles.tierCardCurrent,
             pkg.packageType === 'LIFETIME' && styles.tierCardLifetime,
-            isSuperUltra && styles.tierCardSuperUltra,
+            isIman && styles.tierCardIman,
           ]}
           onPress={() => !isCurrentTier && setSelectedPackage(pkg)}
           disabled={isCurrentTier}
         >
-          {isSuperUltra && (
+          {isIman && (
             <>
               <Animated.View 
                 style={[
@@ -176,36 +189,36 @@ export default function SubscriptionModal({
           {pkg.packageType === 'LIFETIME' && (
             <LinearGradient
               colors={
-                isSuperUltra 
+                isIman 
                   ? [colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark]
                   : [colors.highlight, colors.highlight + 'DD', colors.highlight]
               }
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={[styles.lifetimeBanner, isSuperUltra && styles.lifetimeBannerSuperUltra]}
+              style={[styles.lifetimeBanner, isIman && styles.lifetimeBannerIman]}
             >
-              <IconSymbol name="star" size={16} color={isSuperUltra ? colors.superUltraGoldDeep : colors.card} />
-              <Text style={[styles.lifetimeBannerText, isSuperUltra && styles.lifetimeBannerTextSuperUltra]}>
-                {isSuperUltra ? '✨ ULTIMATE LIFETIME ACCESS ✨' : 'LIFETIME ACCESS'}
+              <IconSymbol name="star" size={16} color={isIman ? colors.superUltraGoldDeep : colors.card} />
+              <Text style={[styles.lifetimeBannerText, isIman && styles.lifetimeBannerTextIman]}>
+                {isIman ? '✨ ULTIMATE LIFETIME ACCESS ✨' : 'LIFETIME ACCESS'}
               </Text>
-              <IconSymbol name="star" size={16} color={isSuperUltra ? colors.superUltraGoldDeep : colors.card} />
+              <IconSymbol name="star" size={16} color={isIman ? colors.superUltraGoldDeep : colors.card} />
             </LinearGradient>
           )}
           
           <View style={styles.tierHeader}>
             <View>
-              <Text style={[styles.tierName, isSuperUltra && styles.tierNameSuperUltra]}>
-                {isSuperUltra && '👑 '}
-                {tier.display_name}
-                {isSuperUltra && ' 👑'}
+              <Text style={[styles.tierName, isIman && styles.tierNameIman]}>
+                {isIman && '👑 '}
+                {displayName}
+                {isIman && ' 👑'}
               </Text>
-              <Text style={[styles.tierPrice, pkg.packageType === 'LIFETIME' && styles.tierPriceLifetime, isSuperUltra && styles.tierPriceSuperUltra]}>
+              <Text style={[styles.tierPrice, pkg.packageType === 'LIFETIME' && styles.tierPriceLifetime, isIman && styles.tierPriceIman]}>
                 {priceString}
                 <Text style={styles.tierPriceLabel}>{period}</Text>
               </Text>
             </View>
             {isCurrentTier && (
-              <View style={[styles.currentBadge, isSuperUltra && styles.currentBadgeSuperUltra]}>
+              <View style={[styles.currentBadge, isIman && styles.currentBadgeIman]}>
                 <Text style={styles.currentBadgeText}>Current</Text>
               </View>
             )}
@@ -213,16 +226,16 @@ export default function SubscriptionModal({
               <IconSymbol 
                 name="check-circle" 
                 size={24} 
-                color={isSuperUltra ? colors.superUltraGold : colors.primary} 
+                color={isIman ? colors.superUltraGold : colors.primary} 
               />
             )}
           </View>
 
-          <Text style={[styles.tierDescription, isSuperUltra && styles.tierDescriptionSuperUltra]}>
+          <Text style={[styles.tierDescription, isIman && styles.tierDescriptionIman]}>
             {tier.description}
           </Text>
 
-          {isSuperUltra && (
+          {isIman && (
             <LinearGradient
               colors={[colors.superUltraGoldLight, colors.superUltraGoldPale]}
               start={{ x: 0, y: 0 }}
@@ -254,14 +267,14 @@ export default function SubscriptionModal({
                   key={index} 
                   style={[
                     styles.featureItem,
-                    isSuperUltra && isExclusiveFeature && styles.featureItemSuperUltra
+                    isIman && isExclusiveFeature && styles.featureItemIman
                   ]}
                 >
                   <IconSymbol 
                     name={getFeatureIcon(feature)} 
                     size={16} 
                     color={
-                      isSuperUltra && isExclusiveFeature 
+                      isIman && isExclusiveFeature 
                         ? colors.superUltraGold 
                         : pkg.packageType === 'LIFETIME'
                           ? colors.highlight 
@@ -270,10 +283,10 @@ export default function SubscriptionModal({
                   />
                   <Text style={[
                     styles.featureText,
-                    isSuperUltra && isExclusiveFeature && styles.featureTextExclusive
+                    isIman && isExclusiveFeature && styles.featureTextExclusive
                   ]}>
                     {feature.replace(/_/g, ' ')}
-                    {isSuperUltra && isExclusiveFeature && ' ⭐'}
+                    {isIman && isExclusiveFeature && ' ⭐'}
                   </Text>
                 </View>
               );
@@ -410,7 +423,7 @@ export default function SubscriptionModal({
             <IconSymbol name="lock" size={20} color={colors.highlight} />
             <Text style={styles.featureAlertText}>
               <Text style={styles.featureAlertBold}>{featureName}</Text> requires{' '}
-              {requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1).replace('_', ' ')} subscription
+              {getTierDisplayName(requiredTier)} subscription
             </Text>
           </View>
         )}
@@ -529,7 +542,7 @@ const styles = StyleSheet.create({
     borderColor: colors.highlight,
     backgroundColor: colors.highlight + '10',
   },
-  tierCardSuperUltra: {
+  tierCardIman: {
     borderColor: colors.superUltraGold,
     backgroundColor: colors.superUltraGoldPale,
     borderWidth: 3,
@@ -601,7 +614,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  lifetimeBannerSuperUltra: {
+  lifetimeBannerIman: {
     paddingVertical: 12,
     boxShadow: `0px 4px 12px ${colors.superUltraGold}60`,
   },
@@ -611,7 +624,7 @@ const styles = StyleSheet.create({
     color: colors.card,
     letterSpacing: 1,
   },
-  lifetimeBannerTextSuperUltra: {
+  lifetimeBannerTextIman: {
     fontSize: 13,
     color: colors.superUltraGoldDeep,
     textShadow: `0px 1px 2px ${colors.superUltraGoldShine}`,
@@ -629,7 +642,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
-  tierNameSuperUltra: {
+  tierNameIman: {
     fontSize: 28,
     color: colors.superUltraGoldDeep,
     textShadow: `0px 2px 4px ${colors.superUltraGold}60`,
@@ -642,7 +655,7 @@ const styles = StyleSheet.create({
   tierPriceLifetime: {
     color: colors.highlight,
   },
-  tierPriceSuperUltra: {
+  tierPriceIman: {
     fontSize: 38,
     color: colors.superUltraGold,
     textShadow: `0px 2px 4px ${colors.superUltraGoldDark}40`,
@@ -657,7 +670,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 12,
   },
-  currentBadgeSuperUltra: {
+  currentBadgeIman: {
     backgroundColor: colors.superUltraGold,
   },
   currentBadgeText: {
@@ -671,7 +684,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 22,
   },
-  tierDescriptionSuperUltra: {
+  tierDescriptionIman: {
     fontSize: 17,
     fontWeight: '600',
     color: colors.superUltraGoldDeep,
@@ -702,7 +715,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 4,
   },
-  featureItemSuperUltra: {
+  featureItemIman: {
     backgroundColor: colors.superUltraGoldLight,
     paddingHorizontal: 12,
     paddingVertical: 8,

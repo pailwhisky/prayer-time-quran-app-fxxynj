@@ -21,7 +21,7 @@ export interface TierFeatureDetail {
 }
 
 export interface SubscriptionTier {
-  id: 'free' | 'ihsan' | 'iman';
+  id: 'free' | 'ihsan' | 'iman' | 'iman_lifetime';
   name: string;
   displayName: string;
   price: string;
@@ -283,6 +283,45 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
     id: 'iman',
     name: 'Iman',
     displayName: 'Iman - Faith',
+    price: '$19.99',
+    priceDetail: 'per month',
+    tagline: 'Complete spiritual companion',
+    color: colors.superUltraGold,
+    gradientColors: [colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark],
+    icon: 'crown',
+    features: [
+      { name: 'Prayer Times', included: true, description: 'Accurate daily prayer times based on location' },
+      { name: 'Qibla Direction', included: true, description: 'Basic compass pointing to Mecca' },
+      { name: 'Quran Reader', included: true, description: 'Read the Holy Quran with translations' },
+      { name: 'Basic Notifications', included: true, description: 'Simple prayer time reminders' },
+      { name: 'Adhan Player', included: true, description: 'Beautiful adhans from famous muezzins worldwide' },
+      { name: 'AR Qibla Compass', included: true, description: 'Augmented reality Qibla finder with camera overlay' },
+      { name: 'Dua Library', included: true, description: '100+ authentic duas with Arabic, transliteration & translation' },
+      { name: 'Islamic Calendar', included: true, description: 'Hijri calendar with important Islamic dates & events' },
+      { name: 'Mosque Finder', included: true, description: 'Locate nearby mosques with directions & prayer times' },
+      { name: 'Spiritual Progress Tracker', included: true, description: 'Track prayers, fasting, Quran reading & good deeds' },
+      { name: 'Advanced Notifications', included: true, description: 'Customizable reminders with multiple adhan sounds' },
+      { name: 'Verse of the Day', included: true, description: 'Daily inspiring verses with AI-powered mini Quran reader' },
+      { name: 'Daily Hadith with AI', included: true, description: 'AI-generated authentic hadith with deep scholarly explanations' },
+      { name: 'Islamic AI Assistant', included: true, description: 'Ask any Islamic question and get scholarly answers instantly' },
+      { name: 'Sadaqah Tracker', included: true, description: 'Track charity donations and good deeds with reminders' },
+      { name: 'Tasbih Counter', included: true, description: 'Digital prayer beads with customizable dhikr and goals' },
+      { name: 'Quran Memorization Tools', included: true, description: 'Advanced tools to help memorize and retain Quran verses' },
+      { name: 'Night Reading Mode', included: true, description: 'Special dark mode optimized for Tahajjud and night prayers' },
+    ],
+    highlights: [
+      'All features unlocked',
+      'AI-powered Islamic learning tools',
+      'Advanced memorization techniques',
+      'Priority customer support',
+      'Cancel anytime',
+      'Best value for committed users',
+    ],
+  },
+  {
+    id: 'iman_lifetime',
+    name: 'Iman Lifetime',
+    displayName: 'Iman - Lifetime',
     price: '$888',
     priceDetail: 'one-time payment',
     tagline: 'Lifetime spiritual companion',
@@ -317,7 +356,7 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
       'Priority customer support',
       'Early access to new features',
       'Support Islamic app development',
-      'Best value for committed users',
+      'Best value for lifetime commitment',
     ],
   },
 ];

@@ -138,6 +138,7 @@ export default function SubscriptionModal({
     const isSelected = selectedPackage?.identifier === pkg.identifier;
     const isCurrentTier = tier.name === currentTier;
     const isIman = tier.name === 'super_ultra' || tier.name === 'iman';
+    const isLifetime = pkg.packageType === 'LIFETIME';
     
     const shimmerOpacity = shimmerAnim.interpolate({
       inputRange: [0, 1],
@@ -164,7 +165,7 @@ export default function SubscriptionModal({
             styles.tierCard,
             isSelected && styles.tierCardSelected,
             isCurrentTier && styles.tierCardCurrent,
-            pkg.packageType === 'LIFETIME' && styles.tierCardLifetime,
+            isLifetime && styles.tierCardLifetime,
             isIman && styles.tierCardIman,
           ]}
           onPress={() => !isCurrentTier && setSelectedPackage(pkg)}
@@ -186,7 +187,7 @@ export default function SubscriptionModal({
             </>
           )}
 
-          {pkg.packageType === 'LIFETIME' && (
+          {isLifetime && (
             <LinearGradient
               colors={
                 isIman 
@@ -205,14 +206,15 @@ export default function SubscriptionModal({
             </LinearGradient>
           )}
           
-          <View style={styles.tierHeader}>
+          <View style={[styles.tierHeader, isLifetime && styles.tierHeaderLifetime]}>
             <View>
               <Text style={[styles.tierName, isIman && styles.tierNameIman]}>
                 {isIman && '👑 '}
                 {displayName}
                 {isIman && ' 👑'}
+                {isLifetime && ' - Lifetime'}
               </Text>
-              <Text style={[styles.tierPrice, pkg.packageType === 'LIFETIME' && styles.tierPriceLifetime, isIman && styles.tierPriceIman]}>
+              <Text style={[styles.tierPrice, isLifetime && styles.tierPriceLifetime, isIman && styles.tierPriceIman]}>
                 {priceString}
                 <Text style={styles.tierPriceLabel}>{period}</Text>
               </Text>
@@ -276,7 +278,7 @@ export default function SubscriptionModal({
                     color={
                       isIman && isExclusiveFeature 
                         ? colors.superUltraGold 
-                        : pkg.packageType === 'LIFETIME'
+                        : isLifetime
                           ? colors.highlight 
                           : colors.primary
                     } 
@@ -297,6 +299,15 @@ export default function SubscriptionModal({
               </Text>
             )}
           </View>
+
+          {isLifetime && (
+            <View style={[styles.savingsBadge, isIman && styles.savingsBadgeIman]}>
+              <IconSymbol name="trending-down" size={16} color={isIman ? colors.superUltraGoldDeep : colors.highlight} />
+              <Text style={[styles.savingsText, isIman && styles.savingsTextIman]}>
+                {isIman ? 'Save over $350 compared to monthly!' : 'Best value - pay once, use forever!'}
+              </Text>
+            </View>
+          )}
         </TouchableOpacity>
       </Animated.View>
     );
@@ -634,6 +645,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 12,
+  },
+  tierHeaderLifetime: {
     marginTop: 32,
   },
   tierName: {
@@ -739,6 +752,32 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 4,
+  },
+  savingsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: colors.highlight + '20',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.highlight,
+  },
+  savingsBadgeIman: {
+    backgroundColor: colors.superUltraGoldLight,
+    borderColor: colors.superUltraGold,
+    borderWidth: 2,
+  },
+  savingsText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.highlight,
+  },
+  savingsTextIman: {
+    color: colors.superUltraGoldDeep,
   },
   infoSection: {
     backgroundColor: colors.card,

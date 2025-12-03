@@ -26,6 +26,7 @@ import NavigationHeader from '@/components/NavigationHeader';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
 import SubscriptionStatus from '@/components/premium/SubscriptionStatus';
 import FeatureCard from '@/components/premium/FeatureCard';
+import TierComparisonCard from '@/components/premium/TierComparisonCard';
 import { PREMIUM_FEATURES, PremiumFeature } from '@/constants/premiumFeatures';
 
 export default function PremiumScreen() {
@@ -71,6 +72,9 @@ export default function PremiumScreen() {
         onRestore={handleRestorePurchases}
         isLoading={revenueCatLoading}
       />
+      
+      <TierComparisonCard />
+      
       <Text style={styles.sectionTitle}>Available Features</Text>
     </>
   );
@@ -154,6 +158,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 16,
+    marginTop: 24,
   },
   separator: {
     height: 12,

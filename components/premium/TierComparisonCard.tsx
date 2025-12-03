@@ -1,423 +1,284 @@
 
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { SubscriptionTier } from '@/constants/premiumFeatures';
+import { SUBSCRIPTION_TIERS } from '@/constants/premiumFeatures';
 
-interface TierComparisonCardProps {
-  tier: SubscriptionTier;
-  isCurrentTier: boolean;
-  onSelect: () => void;
-}
-
-export default function TierComparisonCard({ 
-  tier, 
-  isCurrentTier, 
-  onSelect 
-}: TierComparisonCardProps) {
-  const isIman = tier.id === 'iman';
-  const isFree = tier.id === 'free';
+export default function TierComparisonCard() {
+  const tiers = SUBSCRIPTION_TIERS.filter(t => t.id !== 'free');
 
   return (
-    <View style={[
-      styles.tierCard,
-      isIman && styles.tierCardIman,
-      isCurrentTier && styles.tierCardCurrent,
-    ]}>
-      {isIman && (
-        <>
-          <View style={styles.imanBadge}>
-            <Text style={styles.imanBadgeText}>✨ BEST VALUE ✨</Text>
-          </View>
-          <View style={styles.goldCornerTL} />
-          <View style={styles.goldCornerTR} />
-          <View style={styles.goldCornerBL} />
-          <View style={styles.goldCornerBR} />
-        </>
-      )}
+    <View style={styles.container}>
+      <Text style={styles.title}>Compare Plans</Text>
+      <Text style={styles.subtitle}>Choose the perfect plan for your spiritual journey</Text>
 
-      {/* Header */}
-      <LinearGradient
-        colors={tier.gradientColors}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.tierHeader}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tiersContainer}
       >
-        <IconSymbol 
-          name={tier.icon} 
-          size={32} 
-          color={isIman ? colors.superUltraGoldDeep : isFree ? colors.textSecondary : colors.card} 
-        />
-        <Text style={[
-          styles.tierName,
-          isIman && styles.tierNameIman,
-          isFree && styles.tierNameFree,
-        ]}>
-          {tier.displayName}
-        </Text>
-        <Text style={[
-          styles.tierTagline,
-          isIman && styles.tierTaglineIman,
-          isFree && styles.tierTaglineFree,
-        ]}>
-          {tier.tagline}
-        </Text>
-      </LinearGradient>
+        {tiers.map((tier) => {
+          const isIman = tier.id === 'iman' || tier.id === 'iman_lifetime';
+          const isLifetime = tier.id === 'iman_lifetime';
 
-      {/* Pricing */}
-      <View style={styles.pricingSection}>
-        <View style={styles.priceRow}>
-          <Text style={[
-            styles.price,
-            isIman && styles.priceIman,
-          ]}>
-            {tier.price}
-          </Text>
-          {isCurrentTier && (
-            <View style={styles.currentBadge}>
-              <Text style={styles.currentBadgeText}>CURRENT</Text>
-            </View>
-          )}
-        </View>
-        <Text style={styles.priceDetail}>{tier.priceDetail}</Text>
-      </View>
+          return (
+            <View 
+              key={tier.id} 
+              style={[
+                styles.tierCard,
+                isIman && styles.tierCardIman,
+                isLifetime && styles.tierCardLifetime,
+              ]}
+            >
+              {isLifetime && (
+                <LinearGradient
+                  colors={[colors.superUltraGold, colors.superUltraGoldShine, colors.superUltraGoldDark]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.lifetimeBanner}
+                >
+                  <IconSymbol name="star" size={14} color={colors.superUltraGoldDeep} />
+                  <Text style={styles.lifetimeBannerText}>LIFETIME ACCESS</Text>
+                  <IconSymbol name="star" size={14} color={colors.superUltraGoldDeep} />
+                </LinearGradient>
+              )}
 
-      {/* Highlights */}
-      {tier.highlights.length > 0 && (
-        <View style={styles.highlightsSection}>
-          {tier.highlights.map((highlight, index) => (
-            <View key={index} style={styles.highlightItem}>
-              <IconSymbol 
-                name="check-circle" 
-                size={16} 
-                color={isIman ? colors.superUltraGold : colors.primary} 
-              />
-              <Text style={styles.highlightText}>{highlight}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-
-      {/* Features List */}
-      <View style={styles.featuresSection}>
-        <Text style={styles.featuresSectionTitle}>Features Included:</Text>
-        <ScrollView 
-          style={styles.featuresScroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {tier.features.map((feature, index) => (
-            <View key={index} style={styles.featureItem}>
-              <IconSymbol 
-                name={feature.included ? 'check' : 'close'} 
-                size={18} 
-                color={feature.included 
-                  ? (isIman ? colors.superUltraGold : colors.primary)
-                  : colors.textSecondary
-                } 
-              />
-              <View style={styles.featureTextContainer}>
-                <Text style={[
-                  styles.featureName,
-                  !feature.included && styles.featureNameDisabled,
-                ]}>
-                  {feature.name}
+              <View style={styles.tierHeader}>
+                <IconSymbol 
+                  name={tier.icon} 
+                  size={32} 
+                  color={isIman ? colors.superUltraGold : tier.color} 
+                />
+                <Text style={[styles.tierName, isIman && styles.tierNameIman]}>
+                  {tier.displayName}
                 </Text>
-                {feature.description && feature.included && (
-                  <Text style={styles.featureDescription}>
-                    {feature.description}
+                <Text style={[styles.tierPrice, isIman && styles.tierPriceIman]}>
+                  {tier.price}
+                </Text>
+                <Text style={styles.tierPriceDetail}>{tier.priceDetail}</Text>
+                <Text style={[styles.tierTagline, isIman && styles.tierTaglineIman]}>
+                  {tier.tagline}
+                </Text>
+              </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.featuresSection}>
+                <Text style={styles.featuresTitle}>Features:</Text>
+                {tier.features
+                  .filter(f => f.included)
+                  .slice(0, 8)
+                  .map((feature, index) => (
+                    <View key={index} style={styles.featureRow}>
+                      <IconSymbol 
+                        name="check-circle" 
+                        size={16} 
+                        color={isIman ? colors.superUltraGold : colors.primary} 
+                      />
+                      <Text style={styles.featureName}>{feature.name}</Text>
+                    </View>
+                  ))}
+                {tier.features.filter(f => f.included).length > 8 && (
+                  <Text style={styles.moreFeatures}>
+                    + {tier.features.filter(f => f.included).length - 8} more
                   </Text>
                 )}
               </View>
+
+              <View style={styles.divider} />
+
+              <View style={styles.highlightsSection}>
+                {tier.highlights.map((highlight, index) => (
+                  <View key={index} style={styles.highlightRow}>
+                    <IconSymbol 
+                      name="star" 
+                      size={14} 
+                      color={isIman ? colors.superUltraGold : colors.accent} 
+                    />
+                    <Text style={styles.highlightText}>{highlight}</Text>
+                  </View>
+                ))}
+              </View>
+
+              {isLifetime && (
+                <View style={styles.savingsBadge}>
+                  <IconSymbol name="trending-down" size={16} color={colors.superUltraGoldDeep} />
+                  <Text style={styles.savingsText}>Save $350+ vs monthly</Text>
+                </View>
+              )}
             </View>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Action Button */}
-      {!isCurrentTier && !isFree && (
-        <TouchableOpacity
-          style={[
-            styles.selectButton,
-            isIman && styles.selectButtonIman,
-          ]}
-          onPress={onSelect}
-        >
-          <Text style={[
-            styles.selectButtonText,
-            isIman && styles.selectButtonTextIman,
-          ]}>
-            {isIman ? 'Get Lifetime Access' : 'Subscribe Now'}
-          </Text>
-          <IconSymbol 
-            name="arrow-forward" 
-            size={20} 
-            color={isIman ? colors.superUltraGoldDeep : colors.card} 
-          />
-        </TouchableOpacity>
-      )}
-
-      {isCurrentTier && !isFree && (
-        <View style={styles.currentTierIndicator}>
-          <IconSymbol name="check-circle" size={20} color={colors.primary} />
-          <Text style={styles.currentTierText}>Your Current Plan</Text>
-        </View>
-      )}
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    marginVertical: 24,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
+    paddingHorizontal: 20,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    marginBottom: 20,
+    paddingHorizontal: 20,
+  },
+  tiersContainer: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
   tierCard: {
+    width: 280,
     backgroundColor: colors.card,
-    borderRadius: 20,
-    marginHorizontal: 16,
-    marginVertical: 12,
+    borderRadius: 16,
+    padding: 20,
     borderWidth: 2,
     borderColor: colors.border,
-    overflow: 'hidden',
     boxShadow: `0 4px 12px ${colors.shadow}`,
     elevation: 4,
   },
   tierCardIman: {
     borderColor: colors.superUltraGold,
-    borderWidth: 3,
-    boxShadow: `0 8px 24px ${colors.superUltraGold}60, 0 0 40px ${colors.superUltraGoldShine}40`,
-    elevation: 8,
     backgroundColor: colors.superUltraGoldPale,
+    borderWidth: 3,
+    boxShadow: `0 8px 24px ${colors.superUltraGold}80`,
+    elevation: 8,
   },
-  tierCardCurrent: {
-    borderColor: colors.primary,
-    borderWidth: 2,
+  tierCardLifetime: {
+    paddingTop: 48,
   },
-  imanBadge: {
+  lifetimeBanner: {
     position: 'absolute',
-    top: 16,
-    right: -40,
-    backgroundColor: colors.superUltraGold,
-    paddingVertical: 6,
-    paddingHorizontal: 50,
-    transform: [{ rotate: '45deg' }],
-    zIndex: 10,
-    boxShadow: `0 2px 8px ${colors.superUltraGold}80`,
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    borderTopLeftRadius: 14,
+    borderTopRightRadius: 14,
   },
-  imanBadgeText: {
+  lifetimeBannerText: {
     fontSize: 11,
     fontWeight: 'bold',
     color: colors.superUltraGoldDeep,
     letterSpacing: 1,
   },
-  goldCornerTL: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 40,
-    height: 40,
-    borderTopWidth: 4,
-    borderLeftWidth: 4,
-    borderColor: colors.superUltraGold,
-    borderTopLeftRadius: 20,
-    zIndex: 5,
-  },
-  goldCornerTR: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    width: 40,
-    height: 40,
-    borderTopWidth: 4,
-    borderRightWidth: 4,
-    borderColor: colors.superUltraGold,
-    borderTopRightRadius: 20,
-    zIndex: 5,
-  },
-  goldCornerBL: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    width: 40,
-    height: 40,
-    borderBottomWidth: 4,
-    borderLeftWidth: 4,
-    borderColor: colors.superUltraGold,
-    borderBottomLeftRadius: 20,
-    zIndex: 5,
-  },
-  goldCornerBR: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 40,
-    height: 40,
-    borderBottomWidth: 4,
-    borderRightWidth: 4,
-    borderColor: colors.superUltraGold,
-    borderBottomRightRadius: 20,
-    zIndex: 5,
-  },
   tierHeader: {
-    padding: 24,
     alignItems: 'center',
+    marginBottom: 20,
   },
   tierName: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: colors.card,
+    color: colors.text,
     marginTop: 12,
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
   tierNameIman: {
+    fontSize: 24,
     color: colors.superUltraGoldDeep,
-    fontSize: 26,
   },
-  tierNameFree: {
-    color: colors.text,
+  tierPrice: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  tierPriceIman: {
+    fontSize: 36,
+    color: colors.superUltraGold,
+  },
+  tierPriceDetail: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginBottom: 8,
   },
   tierTagline: {
     fontSize: 14,
-    color: colors.card,
-    opacity: 0.9,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   tierTaglineIman: {
-    color: colors.superUltraGoldDark,
+    fontSize: 15,
     fontWeight: '600',
+    color: colors.superUltraGoldDark,
   },
-  tierTaglineFree: {
-    color: colors.textSecondary,
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: 16,
   },
-  pricingSection: {
-    padding: 20,
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  featuresSection: {
+    marginBottom: 16,
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  price: {
-    fontSize: 36,
+  featuresTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: colors.text,
+    marginBottom: 12,
   },
-  priceIman: {
-    color: colors.superUltraGold,
-  },
-  priceDetail: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-  },
-  currentBadge: {
-    backgroundColor: colors.primary,
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  currentBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: colors.card,
-  },
-  highlightsSection: {
-    padding: 20,
-    gap: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  highlightItem: {
+  featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    marginBottom: 8,
+  },
+  featureName: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.text,
+  },
+  moreFeatures: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  highlightsSection: {
+    gap: 8,
+  },
+  highlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   highlightText: {
     flex: 1,
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  featuresSection: {
-    padding: 20,
-  },
-  featuresSectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  featuresScroll: {
-    maxHeight: 300,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 12,
-  },
-  featureTextContainer: {
-    flex: 1,
-  },
-  featureName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  featureNameDisabled: {
-    color: colors.textSecondary,
-    opacity: 0.5,
-  },
-  featureDescription: {
     fontSize: 12,
     color: colors.textSecondary,
-    lineHeight: 16,
+    lineHeight: 18,
   },
-  selectButton: {
+  savingsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    margin: 20,
-    marginTop: 0,
-    paddingVertical: 16,
-    borderRadius: 12,
-    gap: 8,
-  },
-  selectButtonIman: {
-    backgroundColor: colors.superUltraGold,
-  },
-  selectButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: colors.card,
-  },
-  selectButtonTextIman: {
-    color: colors.superUltraGoldDeep,
-  },
-  currentTierIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    margin: 20,
-    marginTop: 0,
-    paddingVertical: 16,
-    borderRadius: 12,
-    backgroundColor: colors.background,
+    gap: 6,
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: colors.superUltraGoldLight,
+    borderRadius: 8,
     borderWidth: 2,
-    borderColor: colors.primary,
-    gap: 8,
+    borderColor: colors.superUltraGold,
   },
-  currentTierText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.primary,
+  savingsText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.superUltraGoldDeep,
   },
 });

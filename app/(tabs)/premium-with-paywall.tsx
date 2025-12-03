@@ -23,6 +23,12 @@ import MosqueFinder from '@/components/MosqueFinder';
 import DuaLibrary from '@/components/DuaLibrary';
 import HijriCalendar from '@/components/HijriCalendar';
 import ARQiblaCompass from '@/components/ARQiblaCompass';
+import DailyHadith from '@/components/DailyHadith';
+import IslamicChatbot from '@/components/IslamicChatbot';
+import SadaqahDonation from '@/components/SadaqahDonation';
+import TasbihCounter from '@/components/TasbihCounter';
+import QuranMemorization from '@/components/QuranMemorization';
+import NightReadingMode from '@/components/NightReadingMode';
 import NavigationHeader from '@/components/NavigationHeader';
 import { useRevenueCatPaywall } from '@/hooks/useRevenueCatPaywall';
 import { useRevenueCatCustomerCenter } from '@/hooks/useRevenueCatCustomerCenter';
@@ -203,6 +209,12 @@ export default function PremiumScreenWithPaywall() {
         <View style={styles.infoItem}>
           <IconSymbol name="check-circle" size={20} color={colors.primary} />
           <Text style={styles.infoText}>
+            AI-powered Islamic learning tools
+          </Text>
+        </View>
+        <View style={styles.infoItem}>
+          <IconSymbol name="check-circle" size={20} color={colors.primary} />
+          <Text style={styles.infoText}>
             Support the development of Islamic apps
           </Text>
         </View>
@@ -277,6 +289,30 @@ export default function PremiumScreenWithPaywall() {
       />
       <VerseOfTheDay
         visible={activeModal === 'VerseOfTheDay'}
+        onClose={closeModal}
+      />
+      <DailyHadith
+        visible={activeModal === 'DailyHadith'}
+        onClose={closeModal}
+      />
+      <IslamicChatbot
+        visible={activeModal === 'IslamicChatbot'}
+        onClose={closeModal}
+      />
+      <SadaqahDonation
+        visible={activeModal === 'SadaqahDonation'}
+        onClose={closeModal}
+      />
+      <TasbihCounter
+        visible={activeModal === 'TasbihCounter'}
+        onClose={closeModal}
+      />
+      <QuranMemorization
+        visible={activeModal === 'QuranMemorization'}
+        onClose={closeModal}
+      />
+      <NightReadingMode
+        visible={activeModal === 'NightReadingMode'}
         onClose={closeModal}
       />
     </SafeAreaView>

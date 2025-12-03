@@ -16,6 +16,9 @@ interface FeatureCardProps {
 }
 
 export default function FeatureCard({ feature, onPress }: FeatureCardProps) {
+  const isIman = feature.requiredTier === 'iman';
+  const isIhsan = feature.requiredTier === 'ihsan';
+
   return (
     <TouchableOpacity
       style={styles.featureCard}
@@ -28,9 +31,16 @@ export default function FeatureCard({ feature, onPress }: FeatureCardProps) {
       <View style={styles.featureInfo}>
         <View style={styles.featureTitleRow}>
           <Text style={styles.featureTitle}>{feature.title}</Text>
-          {feature.requiredTier === 'ultra' && (
-            <View style={styles.ultraBadge}>
-              <Text style={styles.ultraBadgeText}>ULTRA</Text>
+          {isIman && (
+            <View style={styles.imanBadge}>
+              <IconSymbol name="crown" size={12} color={colors.superUltraGoldDeep} />
+              <Text style={styles.imanBadgeText}>IMAN</Text>
+            </View>
+          )}
+          {isIhsan && (
+            <View style={styles.ihsanBadge}>
+              <IconSymbol name="star" size={12} color={colors.card} />
+              <Text style={styles.ihsanBadgeText}>IHSAN</Text>
             </View>
           )}
         </View>
@@ -69,20 +79,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 4,
+    gap: 8,
   },
   featureTitle: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text,
-    marginRight: 8,
   },
-  ultraBadge: {
-    backgroundColor: colors.highlight,
-    borderRadius: 4,
+  imanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.superUltraGold,
+    borderRadius: 6,
     paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingVertical: 3,
+    gap: 4,
   },
-  ultraBadgeText: {
+  imanBadgeText: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: colors.superUltraGoldDeep,
+  },
+  ihsanBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary,
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    gap: 4,
+  },
+  ihsanBadgeText: {
     fontSize: 10,
     fontWeight: 'bold',
     color: colors.card,

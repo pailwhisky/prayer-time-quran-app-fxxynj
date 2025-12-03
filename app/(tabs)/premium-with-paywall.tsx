@@ -9,6 +9,7 @@ import {
   Platform,
   ListRenderItem,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
@@ -27,7 +28,8 @@ import { useRevenueCatPaywall } from '@/hooks/useRevenueCatPaywall';
 import { useRevenueCatCustomerCenter } from '@/hooks/useRevenueCatCustomerCenter';
 import SubscriptionStatus from '@/components/premium/SubscriptionStatus';
 import FeatureCard from '@/components/premium/FeatureCard';
-import { PREMIUM_FEATURES, PremiumFeature } from '@/constants/premiumFeatures';
+import TierComparisonCard from '@/components/premium/TierComparisonCard';
+import { PREMIUM_FEATURES, SUBSCRIPTION_TIERS, PremiumFeature } from '@/constants/premiumFeatures';
 import { IconSymbol } from '@/components/IconSymbol';
 
 /**
@@ -40,6 +42,7 @@ import { IconSymbol } from '@/components/IconSymbol';
  */
 export default function PremiumScreenWithPaywall() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
   const { currentTier, hasFeature } = useSubscription();
   const { showPaywall, showPaywallIfNeeded, loading: paywallLoading } = useRevenueCatPaywall();
   const { showCustomerCenter, loading: customerCenterLoading } = useRevenueCatCustomerCenter();
@@ -109,6 +112,78 @@ export default function PremiumScreenWithPaywall() {
         onRestore={() => {}} // Restore is handled in Customer Center
         isLoading={loading}
       />
+
+      {/* Tier Comparison Toggle */}
+      <TouchableOpacity
+        style={styles.comparisonToggle}
+        onPress={() => setShowComparison(!showComparison)}
+      >
+        <View style={styles.comparisonToggleContent}>
+          <IconSymbol 
+            name="compare" 
+            size={24} 
+            color={colors.primary} 
+          />
+          <Text style={styles.comparisonToggleText}>
+            {showComparison ? 'Hide' : 'Compare'} Subscription Plans
+          </Text>
+        </View>
+        <IconSymbol 
+          name={showComparison ? 'expand-less' : 'expand-more'} 
+          size={24} 
+          color={colors.primary} 
+        />
+      </TouchableOpacity>
+
+      {/* Tier Comparison Section */}
+      {showComparison && (
+        <View style={styles.comparisonSection}>
+          <Text style={styles.comparisonTitle}>Choose Your Plan</Text>
+          <Text style={styles.comparisonSubtitle}>
+            Select the plan that best fits your spiritual journey
+          </Text>
+          
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tiersScrollContent}
+            snapToInterval={340}
+            decelerationRate="fast"
+          >
+            {SUBSCRIPTION_TIERS.map((tier) => (
+              <View key={tier.id} style={styles.tierCardWrapper}>
+                <TierComparisonCard
+                  tier={tier}
+                  isCurrentTier={currentTier === tier.id}
+                  onSelect={handleUpgrade}
+                />
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Comparison Info */}
+          <View style={styles.comparisonInfo}>
+            <View style={styles.comparisonInfoItem}>
+              <IconSymbol name="info" size={20} color={colors.primary} />
+              <Text style={styles.comparisonInfoText}>
+                All plans include core prayer times and Quran reader
+              </Text>
+            </View>
+            <View style={styles.comparisonInfoItem}>
+              <IconSymbol name="security" size={20} color={colors.primary} />
+              <Text style={styles.comparisonInfoText}>
+                Secure payment processing via App Store/Google Play
+              </Text>
+            </View>
+            <View style={styles.comparisonInfoItem}>
+              <IconSymbol name="support" size={20} color={colors.primary} />
+              <Text style={styles.comparisonInfoText}>
+                Cancel anytime, no questions asked
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
 
       <Text style={styles.sectionTitle}>Available Features</Text>
     </>
@@ -216,6 +291,71 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  comparisonToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: colors.primary,
+    boxShadow: `0 2px 8px ${colors.shadow}`,
+    elevation: 3,
+  },
+  comparisonToggleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  comparisonToggleText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
+  },
+  comparisonSection: {
+    marginBottom: 24,
+  },
+  comparisonTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: colors.text,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  comparisonSubtitle: {
+    fontSize: 15,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  tiersScrollContent: {
+    paddingVertical: 8,
+  },
+  tierCardWrapper: {
+    width: 340,
+  },
+  comparisonInfo: {
+    backgroundColor: colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
+    gap: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  comparisonInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  comparisonInfoText: {
+    flex: 1,
+    fontSize: 13,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
   sectionTitle: {
     fontSize: 22,

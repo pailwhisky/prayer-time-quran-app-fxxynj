@@ -1,13 +1,18 @@
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
 import { SUBSCRIPTION_TIERS } from '@/constants/premiumFeatures';
 
 export default function TierComparisonCard() {
-  const tiers = SUBSCRIPTION_TIERS.filter(t => t.id !== 'free');
+  // Get unique tiers (excluding free, and combining iman monthly/lifetime)
+  const ihsanTier = SUBSCRIPTION_TIERS.find(t => t.id === 'ihsan');
+  const imanMonthlyTier = SUBSCRIPTION_TIERS.find(t => t.id === 'iman');
+  const imanLifetimeTier = SUBSCRIPTION_TIERS.find(t => t.id === 'iman_lifetime');
+
+  const displayTiers = [ihsanTier, imanMonthlyTier, imanLifetimeTier].filter(Boolean);
 
   return (
     <View style={styles.container}>
@@ -19,7 +24,9 @@ export default function TierComparisonCard() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.tiersContainer}
       >
-        {tiers.map((tier) => {
+        {displayTiers.map((tier) => {
+          if (!tier) return null;
+          
           const isIman = tier.id === 'iman' || tier.id === 'iman_lifetime';
           const isLifetime = tier.id === 'iman_lifetime';
 
@@ -39,15 +46,16 @@ export default function TierComparisonCard() {
                   end={{ x: 1, y: 0 }}
                   style={styles.lifetimeBanner}
                 >
-                  <IconSymbol name="star" size={14} color={colors.superUltraGoldDeep} />
+                  <IconSymbol ios_icon_name="star.fill" android_material_icon_name="star" size={14} color={colors.superUltraGoldDeep} />
                   <Text style={styles.lifetimeBannerText}>LIFETIME ACCESS</Text>
-                  <IconSymbol name="star" size={14} color={colors.superUltraGoldDeep} />
+                  <IconSymbol ios_icon_name="star.fill" android_material_icon_name="star" size={14} color={colors.superUltraGoldDeep} />
                 </LinearGradient>
               )}
 
               <View style={styles.tierHeader}>
                 <IconSymbol 
-                  name={tier.icon} 
+                  ios_icon_name={tier.id === 'ihsan' ? 'star.fill' : 'crown.fill'}
+                  android_material_icon_name={tier.id === 'ihsan' ? 'star' : 'workspace_premium'}
                   size={32} 
                   color={isIman ? colors.superUltraGold : tier.color} 
                 />
@@ -73,7 +81,8 @@ export default function TierComparisonCard() {
                   .map((feature, index) => (
                     <View key={index} style={styles.featureRow}>
                       <IconSymbol 
-                        name="check-circle" 
+                        ios_icon_name="checkmark.circle.fill"
+                        android_material_icon_name="check_circle"
                         size={16} 
                         color={isIman ? colors.superUltraGold : colors.primary} 
                       />
@@ -82,7 +91,7 @@ export default function TierComparisonCard() {
                   ))}
                 {tier.features.filter(f => f.included).length > 8 && (
                   <Text style={styles.moreFeatures}>
-                    + {tier.features.filter(f => f.included).length - 8} more
+                    + {tier.features.filter(f => f.included).length - 8} more features
                   </Text>
                 )}
               </View>
@@ -90,10 +99,11 @@ export default function TierComparisonCard() {
               <View style={styles.divider} />
 
               <View style={styles.highlightsSection}>
-                {tier.highlights.map((highlight, index) => (
+                {tier.highlights.slice(0, 4).map((highlight, index) => (
                   <View key={index} style={styles.highlightRow}>
                     <IconSymbol 
-                      name="star" 
+                      ios_icon_name="star.fill"
+                      android_material_icon_name="star"
                       size={14} 
                       color={isIman ? colors.superUltraGold : colors.accent} 
                     />
@@ -104,7 +114,12 @@ export default function TierComparisonCard() {
 
               {isLifetime && (
                 <View style={styles.savingsBadge}>
-                  <IconSymbol name="trending-down" size={16} color={colors.superUltraGoldDeep} />
+                  <IconSymbol 
+                    ios_icon_name="arrow.down.circle.fill"
+                    android_material_icon_name="trending_down"
+                    size={16} 
+                    color={colors.superUltraGoldDeep} 
+                  />
                   <Text style={styles.savingsText}>Save $350+ vs monthly</Text>
                 </View>
               )}

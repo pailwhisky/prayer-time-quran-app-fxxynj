@@ -29,11 +29,15 @@ class QuranService {
     const cacheKey = 'all_surahs';
     
     if (this.cache.has(cacheKey)) {
+      console.log('Returning cached surahs');
       return this.cache.get(cacheKey);
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke('quran-api/surahs');
+      console.log('Fetching surahs from API...');
+      const { data, error } = await supabase.functions.invoke('quran-api', {
+        body: { path: '/surahs' }
+      });
       
       if (error) {
         console.error('Error fetching surahs:', error);
@@ -41,6 +45,7 @@ class QuranService {
       }
 
       if (data?.success && data?.data) {
+        console.log('Successfully fetched', data.data.length, 'surahs');
         this.cache.set(cacheKey, data.data);
         return data.data;
       }
@@ -56,11 +61,15 @@ class QuranService {
     const cacheKey = `surah_${surahNumber}`;
     
     if (this.cache.has(cacheKey)) {
+      console.log('Returning cached surah', surahNumber);
       return this.cache.get(cacheKey);
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke(`quran-api/surah/${surahNumber}`);
+      console.log('Fetching surah', surahNumber, 'from API...');
+      const { data, error } = await supabase.functions.invoke('quran-api', {
+        body: { path: `/surah/${surahNumber}` }
+      });
       
       if (error) {
         console.error('Error fetching surah:', error);
@@ -68,6 +77,7 @@ class QuranService {
       }
 
       if (data?.success && data?.data) {
+        console.log('Successfully fetched surah', surahNumber, 'with', data.data.ayahs?.length || 0, 'ayahs');
         this.cache.set(cacheKey, data.data);
         return data.data;
       }
@@ -80,6 +90,7 @@ class QuranService {
   }
 
   clearCache() {
+    console.log('Clearing Quran service cache');
     this.cache.clear();
   }
 

@@ -56,7 +56,13 @@ export default function QuranScreen() {
   const loadSurahs = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke('quran-api/surahs');
+      console.log('Loading surahs...');
+      
+      const { data, error } = await supabase.functions.invoke('quran-api', {
+        body: { path: '/surahs' }
+      });
+      
+      console.log('Surahs response:', { data, error });
       
       if (error) {
         console.error('Error loading surahs:', error);
@@ -64,8 +70,11 @@ export default function QuranScreen() {
       }
 
       if (data?.success && data?.data) {
+        console.log('Loaded', data.data.length, 'surahs');
         setSurahs(data.data);
         setFilteredSurahs(data.data);
+      } else {
+        console.error('Invalid response format:', data);
       }
     } catch (error) {
       console.error('Error loading surahs:', error);
@@ -150,6 +159,20 @@ export default function QuranScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={styles.loadingText}>Loading Quran...</Text>
+        </View>
+      );
+    }
+
+    if (surahs.length === 0) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.errorText}>Failed to load Quran data</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={loadSurahs}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -264,6 +287,23 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: colors.textSecondary,
+  },
+  errorText: {
+    fontSize: 16,
+    color: colors.error,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '600',
   },
   statsContainer: {
     flexDirection: 'row',

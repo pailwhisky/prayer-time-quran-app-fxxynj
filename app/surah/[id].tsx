@@ -59,7 +59,13 @@ export default function SurahDetailScreen() {
   const loadSurah = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase.functions.invoke(`quran-api/surah/${id}`);
+      console.log('Loading surah:', id);
+      
+      const { data, error } = await supabase.functions.invoke('quran-api', {
+        body: { path: `/surah/${id}` }
+      });
+      
+      console.log('Surah response:', { data, error });
       
       if (error) {
         console.error('Error loading surah:', error);
@@ -68,8 +74,12 @@ export default function SurahDetailScreen() {
       }
 
       if (data?.success && data?.data) {
+        console.log('Loaded surah with', data.data.ayahs?.length || 0, 'ayahs');
         setSurah(data.data.surah);
         setAyahs(data.data.ayahs);
+      } else {
+        console.error('Invalid response format:', data);
+        Alert.alert('Error', 'Failed to load Surah. Please try again.');
       }
     } catch (error) {
       console.error('Error loading surah:', error);
@@ -212,6 +222,12 @@ export default function SurahDetailScreen() {
         />
         <View style={styles.loadingContainer}>
           <Text style={styles.errorText}>Surah not found</Text>
+          <TouchableOpacity 
+            style={styles.retryButton}
+            onPress={loadSurah}
+          >
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -258,14 +274,16 @@ export default function SurahDetailScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.bismillahContainer}>
-          <Text style={styles.bismillahText}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
-          {showTranslation && (
-            <Text style={styles.bismillahTranslation}>
-              In the name of Allah, the Most Gracious, the Most Merciful
-            </Text>
-          )}
-        </View>
+        {surah.number !== 1 && surah.number !== 9 && (
+          <View style={styles.bismillahContainer}>
+            <Text style={styles.bismillahText}>بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</Text>
+            {showTranslation && (
+              <Text style={styles.bismillahTranslation}>
+                In the name of Allah, the Most Gracious, the Most Merciful
+              </Text>
+            )}
+          </View>
+        )}
 
         <View style={styles.ayahsList}>
           {ayahs.map((ayah) => renderAyah(ayah))}
@@ -303,6 +321,19 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: colors.error,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: colors.card,
+    fontSize: 16,
+    fontWeight: '600',
   },
   surahHeader: {
     backgroundColor: colors.card,

@@ -3,13 +3,13 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors } from '@/styles/commonStyles';
 import { IconSymbol } from '@/components/IconSymbol';
-import { useSubscription, SubscriptionTier } from '@/contexts/SubscriptionContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import SubscriptionModal from '@/components/SubscriptionModal';
 
 interface PremiumGateProps {
   featureKey: string;
   featureName?: string;
-  requiredTier?: SubscriptionTier;
+  requiredTier?: string;
   children: React.ReactNode;
   showUpgradePrompt?: boolean;
 }
@@ -21,10 +21,14 @@ export default function PremiumGate({
   children,
   showUpgradePrompt = true,
 }: PremiumGateProps) {
-  const { hasFeature, currentTier } = useSubscription();
+  const { hasFeature, currentTier, features } = useSubscription();
   const [showSubscriptionModal, setShowSubscriptionModal] = useState(false);
 
   const hasAccess = hasFeature(featureKey);
+
+  // Get the actual required tier from the feature definition
+  const feature = features.find(f => f.feature_key === featureKey);
+  const actualRequiredTier = feature?.required_tier || requiredTier;
 
   if (hasAccess) {
     return <>{children}</>;
@@ -43,7 +47,7 @@ export default function PremiumGate({
         <Text style={styles.title}>Premium Feature</Text>
         <Text style={styles.description}>
           {featureName} is available with{' '}
-          {requiredTier.charAt(0).toUpperCase() + requiredTier.slice(1)} subscription
+          {actualRequiredTier.charAt(0).toUpperCase() + actualRequiredTier.slice(1)} subscription
         </Text>
         <TouchableOpacity
           style={styles.upgradeButton}
@@ -60,7 +64,7 @@ export default function PremiumGate({
       <SubscriptionModal
         visible={showSubscriptionModal}
         onClose={() => setShowSubscriptionModal(false)}
-        requiredTier={requiredTier}
+        requiredTier={actualRequiredTier}
         featureName={featureName}
       />
     </>

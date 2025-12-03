@@ -122,7 +122,7 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
         <PremiumGate
           featureKey="daily_hadith"
           featureName="AI-Generated Daily Hadith"
-          requiredTier="premium"
+          requiredTier="iman"
         >
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>

@@ -167,7 +167,7 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
         <PremiumGate
           featureKey="ai_chatbot"
           featureName="AI Islamic Assistant"
-          requiredTier="ultra"
+          requiredTier="iman"
         >
 
         <KeyboardAvoidingView

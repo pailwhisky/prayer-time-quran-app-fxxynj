@@ -27,7 +27,6 @@ import { useRevenueCatPaywall } from '@/hooks/useRevenueCatPaywall';
 import { useRevenueCatCustomerCenter } from '@/hooks/useRevenueCatCustomerCenter';
 import SubscriptionStatus from '@/components/premium/SubscriptionStatus';
 import FeatureCard from '@/components/premium/FeatureCard';
-import ExperimentTracker from '@/components/premium/ExperimentTracker';
 import { PREMIUM_FEATURES, PremiumFeature } from '@/constants/premiumFeatures';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -38,8 +37,6 @@ import { IconSymbol } from '@/components/IconSymbol';
  * - RevenueCat Paywall for upgrades (instead of custom modal)
  * - Customer Center for subscription management
  * - Feature gates with automatic paywall display
- * - A/B Testing with Experiments
- * - Advanced Analytics tracking
  */
 export default function PremiumScreenWithPaywall() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
@@ -115,13 +112,6 @@ export default function PremiumScreenWithPaywall() {
         onManageSubscription={handleManageSubscription}
         onRestore={() => {}} // Restore is handled in Customer Center
         isLoading={loading}
-      />
-      
-      {/* A/B Test Experiment Tracker */}
-      <ExperimentTracker
-        onExperimentLoaded={(experimentId) => {
-          console.log('Experiment loaded:', experimentId);
-        }}
       />
 
       {/* Quick Actions */}

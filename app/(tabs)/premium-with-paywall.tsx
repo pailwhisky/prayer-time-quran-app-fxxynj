@@ -96,10 +96,6 @@ export default function PremiumScreenWithPaywall() {
     }
   };
 
-  const handleViewAnalytics = () => {
-    router.push('/(tabs)/analytics');
-  };
-
   const renderFeatureCard: ListRenderItem<PremiumFeature> = ({ item }) => (
     <FeatureCard feature={item} onPress={openFeature} />
   );
@@ -113,39 +109,6 @@ export default function PremiumScreenWithPaywall() {
         onRestore={() => {}} // Restore is handled in Customer Center
         isLoading={loading}
       />
-
-      {/* Quick Actions */}
-      <View style={styles.quickActions}>
-        <TouchableOpacity
-          style={[styles.quickActionButton, styles.quickActionPrimary]}
-          onPress={handleUpgrade}
-          disabled={loading}
-        >
-          <IconSymbol name="star" size={20} color={colors.card} />
-          <Text style={styles.quickActionText}>Upgrade to Pro</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={[styles.quickActionButton, styles.quickActionSecondary]}
-          onPress={handleManageSubscription}
-          disabled={loading}
-        >
-          <IconSymbol name="settings" size={20} color={colors.primary} />
-          <Text style={[styles.quickActionText, styles.quickActionTextSecondary]}>
-            Manage
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Analytics Link */}
-      <TouchableOpacity
-        style={styles.analyticsLink}
-        onPress={handleViewAnalytics}
-      >
-        <IconSymbol name="bar-chart" size={20} color={colors.primary} />
-        <Text style={styles.analyticsLinkText}>View Subscription Analytics</Text>
-        <IconSymbol name="chevron-right" size={20} color={colors.textSecondary} />
-      </TouchableOpacity>
 
       <Text style={styles.sectionTitle}>Available Features</Text>
     </>
@@ -253,53 +216,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 20,
-  },
-  quickActions: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
-  },
-  quickActionButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  quickActionPrimary: {
-    backgroundColor: colors.primary,
-  },
-  quickActionSecondary: {
-    backgroundColor: colors.secondary + '20',
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  quickActionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.card,
-  },
-  quickActionTextSecondary: {
-    color: colors.primary,
-  },
-  analyticsLink: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.card,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 24,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  analyticsLinkText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: colors.text,
-    marginLeft: 12,
   },
   sectionTitle: {
     fontSize: 22,

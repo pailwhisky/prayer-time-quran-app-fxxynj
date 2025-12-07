@@ -58,12 +58,12 @@ export default function PremiumScreenWithPaywall() {
 
   const openFeature = async (feature: PremiumFeature) => {
     console.log('Opening feature:', feature.component);
-    
+
     // Check if feature requires premium access
     if (feature.isPremium && !hasFeature(feature.requiredFeature || '')) {
       // Show paywall if user doesn't have access
       const result = await showPaywallIfNeeded('my prayer Pro');
-      
+
       if (result === null) {
         // User has access, show the feature
         setActiveModal(feature.component);
@@ -115,7 +115,7 @@ export default function PremiumScreenWithPaywall() {
         currentTier={currentTier}
         onUpgrade={handleUpgrade}
         onManageSubscription={handleManageSubscription}
-        onRestore={() => {}} // Restore is handled in Customer Center
+        onRestore={() => { }} // Restore is handled in Customer Center
         isLoading={loading}
       />
 
@@ -125,19 +125,19 @@ export default function PremiumScreenWithPaywall() {
         onPress={() => setShowComparison(!showComparison)}
       >
         <View style={styles.comparisonToggleContent}>
-          <IconSymbol 
-            name="compare" 
-            size={24} 
-            color={colors.primary} 
+          <IconSymbol
+            name="compare"
+            size={24}
+            color={colors.primary}
           />
           <Text style={styles.comparisonToggleText}>
             {showComparison ? 'Hide' : 'Compare'} Subscription Plans
           </Text>
         </View>
-        <IconSymbol 
-          name={showComparison ? 'expand-less' : 'expand-more'} 
-          size={24} 
-          color={colors.primary} 
+        <IconSymbol
+          name={showComparison ? 'expand-less' : 'expand-more'}
+          size={24}
+          color={colors.primary}
         />
       </TouchableOpacity>
 
@@ -148,24 +148,8 @@ export default function PremiumScreenWithPaywall() {
           <Text style={styles.comparisonSubtitle}>
             Select the plan that best fits your spiritual journey
           </Text>
-          
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.tiersScrollContent}
-            snapToInterval={340}
-            decelerationRate="fast"
-          >
-            {SUBSCRIPTION_TIERS.map((tier) => (
-              <View key={tier.id} style={styles.tierCardWrapper}>
-                <TierComparisonCard
-                  tier={tier}
-                  isCurrentTier={currentTier === tier.id}
-                  onSelect={handleUpgrade}
-                />
-              </View>
-            ))}
-          </ScrollView>
+
+          <TierComparisonCard />
 
           {/* Comparison Info */}
           <View style={styles.comparisonInfo}>
@@ -239,7 +223,7 @@ export default function PremiumScreenWithPaywall() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       <NavigationHeader
         title="Premium Features"
         showBack={false}

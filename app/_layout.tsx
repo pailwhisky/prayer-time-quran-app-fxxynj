@@ -4,7 +4,7 @@ import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { useColorScheme, Platform } from 'react-native';
 import {
@@ -18,6 +18,9 @@ import {
 import { SubscriptionProvider } from '@/contexts/SubscriptionContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import * as Notifications from 'expo-notifications';
+import { logger, logInfo, logError } from '@/utils/productionLogger';
+import { performanceMonitor } from '@/utils/performanceMonitor';
+import { validateEnvironment } from '@/utils/environmentValidator';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,44 +42,79 @@ export default function RootLayout() {
     NotoSansArabic_400Regular,
     NotoSansArabic_700Bold,
   });
+  const [appReady, setAppReady] = useState(false);
 
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
-
-  useEffect(() => {
-    const setupNotificationCategories = async () => {
-      if (Platform.OS === 'ios') {
-        try {
-          await Notifications.setNotificationCategoryAsync('prayer-reminder', [
-            {
-              identifier: 'view',
-              buttonTitle: 'View',
-              options: {
-                opensAppToForeground: true,
-              },
-            },
-            {
-              identifier: 'dismiss',
-              buttonTitle: 'Dismiss',
-              options: {
-                opensAppToForeground: false,
-              },
-            },
-          ]);
-          console.log('✅ iOS notification categories set up');
-        } catch (error) {
-          console.error('Error setting up notification categories:', error);
-        }
-      }
-    };
-
-    setupNotificationCategories();
+    initializeApp();
   }, []);
 
-  if (!loaded) {
+  const initializeApp = async () => {
+    const startTime = Date.now();
+    
+    try {
+      logInfo('🚀 Initializing app...');
+
+      // Validate environment configuration
+      try {
+        validateEnvironment();
+        logInfo('✅ Environment validated');
+      } catch (error) {
+        logError('❌ Environment validation failed', error as Error);
+        // Continue anyway in development
+        if (!__DEV__) {
+          throw error;
+        }
+      }
+
+      // Set up notification categories
+      await setupNotificationCategories();
+
+      // Track startup time
+      const duration = Date.now() - startTime;
+      performanceMonitor.trackStartup(duration);
+      logInfo(`✅ App initialized in ${duration}ms`);
+
+      setAppReady(true);
+    } catch (error) {
+      logError('❌ App initialization failed', error as Error);
+      setAppReady(true); // Still show app with error boundary
+    }
+  };
+
+  const setupNotificationCategories = async () => {
+    if (Platform.OS === 'ios') {
+      try {
+        await Notifications.setNotificationCategoryAsync('prayer-reminder', [
+          {
+            identifier: 'view',
+            buttonTitle: 'View',
+            options: {
+              opensAppToForeground: true,
+            },
+          },
+          {
+            identifier: 'dismiss',
+            buttonTitle: 'Dismiss',
+            options: {
+              opensAppToForeground: false,
+            },
+          },
+        ]);
+        logInfo('✅ iOS notification categories set up');
+      } catch (error) {
+        logError('❌ Error setting up notification categories', error as Error);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (loaded && appReady) {
+      SplashScreen.hideAsync();
+      logInfo('✅ Splash screen hidden');
+    }
+  }, [loaded, appReady]);
+
+  if (!loaded || !appReady) {
     return null;
   }
 

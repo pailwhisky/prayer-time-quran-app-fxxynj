@@ -13,7 +13,7 @@ import {
 } from '@/utils/revenueCatService';
 import Purchases, { CustomerInfo } from 'react-native-purchases';
 
-export type SubscriptionTier = 'free' | 'premium' | 'ultra' | 'super_ultra';
+export type SubscriptionTier = 'free' | 'ihsan' | 'iman';
 
 export interface SubscriptionTierData {
   id: string;
@@ -267,7 +267,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
 
     // Check tier hierarchy
-    const tierHierarchy: SubscriptionTier[] = ['free', 'premium', 'ultra', 'super_ultra'];
+    const tierHierarchy: SubscriptionTier[] = ['free', 'ihsan', 'iman'];
     const currentTierIndex = tierHierarchy.indexOf(currentTier);
     const requiredTierIndex = tierHierarchy.indexOf(feature.required_tier);
 

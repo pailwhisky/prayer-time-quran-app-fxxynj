@@ -114,7 +114,12 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
           onClosePress={onClose}
           rightComponent={
             <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-              <IconSymbol name="arrow.clockwise" size={20} color={colors.primary} />
+              <IconSymbol 
+                ios_icon_name="arrow.clockwise" 
+                android_material_icon_name="refresh" 
+                size={20} 
+                color={colors.primary} 
+              />
             </TouchableOpacity>
           }
         />
@@ -133,7 +138,12 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
             </View>
           ) : error ? (
             <View style={styles.errorContainer}>
-              <IconSymbol name="exclamationmark.triangle" size={48} color={colors.highlight} />
+              <IconSymbol 
+                ios_icon_name="exclamationmark.triangle" 
+                android_material_icon_name="warning" 
+                size={48} 
+                color={colors.highlight} 
+              />
               <Text style={styles.errorText}>Unable to load Hadith</Text>
               <TouchableOpacity style={styles.retryButton} onPress={loadDailyHadith}>
                 <Text style={styles.retryButtonText}>Try Again</Text>
@@ -142,7 +152,12 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
           ) : hadithData ? (
             <>
               <View style={styles.dateCard}>
-                <IconSymbol name="calendar" size={20} color={colors.accent} />
+                <IconSymbol 
+                  ios_icon_name="calendar" 
+                  android_material_icon_name="calendar_today" 
+                  size={20} 
+                  color={colors.accent} 
+                />
                 <Text style={styles.dateText}>
                   {new Date(hadithData.date).toLocaleDateString('en-US', {
                     weekday: 'long',
@@ -155,18 +170,33 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
 
               <View style={styles.hadithCard}>
                 <View style={styles.quoteIcon}>
-                  <IconSymbol name="quote.opening" size={32} color={colors.accent} />
+                  <IconSymbol 
+                    ios_icon_name="quote.opening" 
+                    android_material_icon_name="format_quote" 
+                    size={32} 
+                    color={colors.accent} 
+                  />
                 </View>
                 <Text style={styles.hadithText}>{hadithData.hadith}</Text>
                 <View style={styles.referenceContainer}>
-                  <IconSymbol name="book.closed" size={16} color={colors.textSecondary} />
+                  <IconSymbol 
+                    ios_icon_name="book.closed" 
+                    android_material_icon_name="menu_book" 
+                    size={16} 
+                    color={colors.textSecondary} 
+                  />
                   <Text style={styles.referenceText}>{hadithData.reference}</Text>
                 </View>
               </View>
 
               <View style={styles.explanationCard}>
                 <View style={styles.explanationHeader}>
-                  <IconSymbol name="lightbulb" size={20} color={colors.primary} />
+                  <IconSymbol 
+                    ios_icon_name="lightbulb" 
+                    android_material_icon_name="lightbulb" 
+                    size={20} 
+                    color={colors.primary} 
+                  />
                   <Text style={styles.explanationTitle}>Understanding & Reflection</Text>
                 </View>
                 <Text style={styles.explanationText}>{hadithData.explanation}</Text>
@@ -176,22 +206,42 @@ export default function DailyHadith({ visible, onClose }: DailyHadithProps) {
                 <Text style={styles.actionsTitle}>Apply This Teaching</Text>
                 <View style={styles.actionsList}>
                   <View style={styles.actionItem}>
-                    <IconSymbol name="checkmark.circle" size={20} color={colors.accent} />
+                    <IconSymbol 
+                      ios_icon_name="checkmark.circle" 
+                      android_material_icon_name="check_circle" 
+                      size={20} 
+                      color={colors.accent} 
+                    />
                     <Text style={styles.actionText}>Reflect on this Hadith during your day</Text>
                   </View>
                   <View style={styles.actionItem}>
-                    <IconSymbol name="checkmark.circle" size={20} color={colors.accent} />
+                    <IconSymbol 
+                      ios_icon_name="checkmark.circle" 
+                      android_material_icon_name="check_circle" 
+                      size={20} 
+                      color={colors.accent} 
+                    />
                     <Text style={styles.actionText}>Share this wisdom with family and friends</Text>
                   </View>
                   <View style={styles.actionItem}>
-                    <IconSymbol name="checkmark.circle" size={20} color={colors.accent} />
+                    <IconSymbol 
+                      ios_icon_name="checkmark.circle" 
+                      android_material_icon_name="check_circle" 
+                      size={20} 
+                      color={colors.accent} 
+                    />
                     <Text style={styles.actionText}>Practice the teaching in your actions</Text>
                   </View>
                 </View>
               </View>
 
               <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-                <IconSymbol name="square.and.arrow.up" size={20} color="#FFFFFF" />
+                <IconSymbol 
+                  ios_icon_name="square.and.arrow.up" 
+                  android_material_icon_name="share" 
+                  size={20} 
+                  color="#FFFFFF" 
+                />
                 <Text style={styles.shareButtonText}>Share This Hadith</Text>
               </TouchableOpacity>
 
@@ -231,7 +281,7 @@ const styles = StyleSheet.create({
     paddingVertical: 100,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 17,
     color: colors.textSecondary,
     marginTop: 16,
   },
@@ -242,7 +292,7 @@ const styles = StyleSheet.create({
     paddingVertical: 100,
   },
   errorText: {
-    fontSize: 18,
+    fontSize: 19,
     color: colors.text,
     marginTop: 16,
     marginBottom: 24,
@@ -254,7 +304,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   retryButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -271,7 +321,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   dateText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text,
   },
@@ -290,8 +340,8 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
   hadithText: {
-    fontSize: 18,
-    lineHeight: 28,
+    fontSize: 19,
+    lineHeight: 30,
     color: colors.text,
     fontWeight: '500',
     marginBottom: 20,
@@ -305,7 +355,7 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
   },
   referenceText: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -326,13 +376,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   explanationTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.primary,
   },
   explanationText: {
-    fontSize: 15,
-    lineHeight: 23,
+    fontSize: 16,
+    lineHeight: 25,
     color: colors.text,
   },
   actionsCard: {
@@ -344,7 +394,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   actionsTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 16,
@@ -359,8 +409,8 @@ const styles = StyleSheet.create({
   },
   actionText: {
     flex: 1,
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 23,
     color: colors.text,
   },
   shareButton: {
@@ -376,7 +426,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   shareButtonText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#FFFFFF',
   },
@@ -388,14 +438,14 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
   },
   reminderText: {
-    fontSize: 14,
-    lineHeight: 21,
+    fontSize: 15,
+    lineHeight: 23,
     color: colors.text,
     fontStyle: 'italic',
     marginBottom: 8,
   },
   reminderReference: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },

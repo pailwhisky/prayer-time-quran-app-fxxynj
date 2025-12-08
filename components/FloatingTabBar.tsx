@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconSymbol } from '@/components/IconSymbol';
 import { BlurView } from 'expo-blur';
 import { colors } from '@/styles/commonStyles';
 import Animated, {
@@ -39,8 +38,8 @@ interface FloatingTabBarProps {
 export default function FloatingTabBar({
   tabs,
   containerWidth = 340,
-  borderRadius = 28,
-  bottomMargin = 20,
+  borderRadius = 24,
+  bottomMargin = 16,
 }: FloatingTabBarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -172,15 +171,15 @@ const styles = StyleSheet.create({
   },
   indicator: {
     position: 'absolute',
-    top: 8,
+    top: 6,
     left: 8,
-    bottom: 8,
-    borderRadius: 20,
+    bottom: 6,
+    borderRadius: 18,
     backgroundColor: colors.primary,
   },
   tabsContainer: {
     flexDirection: 'row',
-    height: 60,
+    height: 50,
     alignItems: 'center',
     paddingHorizontal: 8,
   },
@@ -188,21 +187,22 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabLabel: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: 15,
+    fontWeight: '700',
     color: colors.quranGreen,
     textTransform: 'capitalize',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   tabLabelActive: {
     color: colors.card,
-    fontSize: 20,
+    fontSize: 16,
+    fontWeight: '800',
   },
 });

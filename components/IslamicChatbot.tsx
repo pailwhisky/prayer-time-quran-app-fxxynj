@@ -80,7 +80,7 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
     setIsLoading(true);
 
     try {
-      // Get AI response using GOOGLE_AI_API_KEY
+      // Get AI response
       const response = await askIslamicQuestion(messageText);
 
       if (response) {
@@ -202,7 +202,12 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
                     onPress={() => handleSendMessage(question)}
                   >
                     <Text style={styles.suggestionText}>{question}</Text>
-                    <IconSymbol name="arrow.right" size={16} color={colors.primary} />
+                    <IconSymbol 
+                      ios_icon_name="arrow.right" 
+                      android_material_icon_name="arrow_forward" 
+                      size={16} 
+                      color={colors.primary} 
+                    />
                   </TouchableOpacity>
                 ))}
               </View>
@@ -226,7 +231,8 @@ export default function IslamicChatbot({ visible, onClose }: IslamicChatbotProps
                 disabled={!inputText.trim() || isLoading}
               >
                 <IconSymbol
-                  name="arrow.up"
+                  ios_icon_name="arrow.up"
+                  android_material_icon_name="arrow_upward"
                   size={20}
                   color={inputText.trim() && !isLoading ? '#FFFFFF' : colors.textSecondary}
                 />
@@ -285,8 +291,8 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
   },
   messageText: {
-    fontSize: 15,
-    lineHeight: 21,
+    fontSize: 16,
+    lineHeight: 23,
   },
   userMessageText: {
     color: '#FFFFFF',
@@ -295,7 +301,7 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   timestamp: {
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(0, 0, 0, 0.4)',
     marginTop: 6,
     alignSelf: 'flex-end',
@@ -307,15 +313,15 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
   },
   referencesTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.primary,
     marginBottom: 6,
   },
   referenceText: {
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 19,
     marginBottom: 2,
   },
   loadingContainer: {
@@ -333,7 +339,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   loadingText: {
-    fontSize: 15,
+    fontSize: 16,
     color: colors.textSecondary,
     fontStyle: 'italic',
   },
@@ -341,7 +347,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   suggestionsTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.text,
     marginBottom: 12,
@@ -360,7 +366,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   suggestionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text,
     flex: 1,
     marginRight: 8,
@@ -384,7 +390,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.text,
     maxHeight: 100,
     borderWidth: 1,
@@ -404,7 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.border,
   },
   disclaimer: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',

@@ -90,7 +90,7 @@ export default function TierComparisonCard() {
                 <IconSymbol 
                   ios_icon_name={tier.id === 'ihsan' ? 'star.fill' : 'crown.fill'}
                   android_material_icon_name={tier.id === 'ihsan' ? 'star' : 'workspace_premium'}
-                  size={32} 
+                  size={36} 
                   color={isIman ? colors.superUltraGold : displayTier.color} 
                 />
                 <Text style={[styles.tierName, isIman && styles.tierNameIman]}>
@@ -128,7 +128,7 @@ export default function TierComparisonCard() {
                       <IconSymbol 
                         ios_icon_name="checkmark.circle.fill"
                         android_material_icon_name="check_circle"
-                        size={16} 
+                        size={18} 
                         color={isIman ? colors.superUltraGold : colors.primary} 
                       />
                       <Text style={styles.featureName}>{feature.name}</Text>
@@ -149,7 +149,7 @@ export default function TierComparisonCard() {
                     <IconSymbol 
                       ios_icon_name="star.fill"
                       android_material_icon_name="star"
-                      size={14} 
+                      size={15} 
                       color={isIman ? colors.superUltraGold : colors.accent} 
                     />
                     <Text style={styles.highlightText}>{highlight}</Text>
@@ -169,14 +169,14 @@ const styles = StyleSheet.create({
     marginVertical: 24,
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 8,
     paddingHorizontal: 20,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 17,
     color: colors.textSecondary,
     marginBottom: 20,
     paddingHorizontal: 20,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.superUltraGold,
   },
   pricingToggleText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
     color: colors.textSecondary,
   },
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   tierName: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: 'bold',
     color: colors.text,
     marginTop: 12,
@@ -245,21 +245,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   tierNameIman: {
-    fontSize: 24,
+    fontSize: 26,
     color: colors.superUltraGoldDeep,
   },
   tierPrice: {
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: 'bold',
     color: colors.primary,
     marginBottom: 4,
   },
   tierPriceIman: {
-    fontSize: 36,
+    fontSize: 38,
     color: colors.superUltraGold,
   },
   tierPriceDetail: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     marginBottom: 8,
   },
@@ -278,18 +278,18 @@ const styles = StyleSheet.create({
     borderColor: colors.superUltraGold,
   },
   savingsTextInline: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.superUltraGoldDeep,
   },
   tierTagline: {
-    fontSize: 14,
+    fontSize: 15,
     color: colors.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },
   tierTaglineIman: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.superUltraGoldDark,
   },
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   featuresTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 12,
@@ -315,11 +315,11 @@ const styles = StyleSheet.create({
   },
   featureName: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 14,
     color: colors.text,
   },
   moreFeatures: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.textSecondary,
     fontStyle: 'italic',
     marginTop: 4,
@@ -334,8 +334,8 @@ const styles = StyleSheet.create({
   },
   highlightText: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 19,
   },
 });

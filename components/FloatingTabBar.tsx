@@ -38,8 +38,8 @@ interface FloatingTabBarProps {
 export default function FloatingTabBar({
   tabs,
   containerWidth = 340,
-  borderRadius = 24,
-  bottomMargin = 16,
+  borderRadius = 20,
+  bottomMargin = 12,
 }: FloatingTabBarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -100,7 +100,7 @@ export default function FloatingTabBar({
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
       <View style={[styles.container, { width: containerWidth, marginBottom: bottomMargin }]}>
         <BlurView
-          intensity={Platform.OS === 'web' ? 0 : 60}
+          intensity={Platform.OS === 'web' ? 0 : 40}
           style={[styles.blurContainer, { borderRadius }]}
         >
           <View style={styles.background} />
@@ -150,18 +150,18 @@ const styles = StyleSheet.create({
   blurContainer: {
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(212, 163, 115, 0.3)',
+    borderColor: 'rgba(212, 163, 115, 0.2)',
     ...Platform.select({
       ios: {
-        backgroundColor: 'rgba(255, 255, 255, 0.4)',
+        backgroundColor: 'rgba(255, 255, 255, 0.25)',
       },
       android: {
-        backgroundColor: 'rgba(245, 245, 220, 0.5)',
-        elevation: 8,
+        backgroundColor: 'rgba(245, 245, 220, 0.35)',
+        elevation: 6,
       },
       web: {
-        backgroundColor: 'rgba(245, 245, 220, 0.5)',
-        backdropFilter: 'blur(10px)',
+        backgroundColor: 'rgba(245, 245, 220, 0.35)',
+        backdropFilter: 'blur(8px)',
       },
     }),
   },
@@ -171,15 +171,15 @@ const styles = StyleSheet.create({
   },
   indicator: {
     position: 'absolute',
-    top: 3,
+    top: 2,
     left: 8,
-    bottom: 3,
-    borderRadius: 18,
+    bottom: 2,
+    borderRadius: 16,
     backgroundColor: colors.primary,
   },
   tabsContainer: {
     flexDirection: 'row',
-    height: 32,
+    height: 44,
     alignItems: 'center',
     paddingHorizontal: 8,
   },
@@ -187,14 +187,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 4,
+    paddingVertical: 6,
   },
   tabContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabLabel: {
-    fontSize: 20,
+    fontSize: 15,
     fontWeight: '700',
     color: colors.quranGreen,
     textTransform: 'capitalize',
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
   },
   tabLabelActive: {
     color: colors.card,
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '800',
   },
 });

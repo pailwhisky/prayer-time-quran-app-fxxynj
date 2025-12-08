@@ -15,7 +15,7 @@ export default function TabLayout() {
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarLabelStyle: {
-          fontSize: 14,
+          fontSize: 16,
           fontWeight: '700',
           marginTop: 4,
         },
@@ -24,16 +24,16 @@ export default function TabLayout() {
             position: 'absolute',
             backgroundColor: colors.card,
             borderTopColor: colors.border,
-            height: 88,
-            paddingBottom: 8,
-            paddingTop: 8,
+            height: 72,
+            paddingBottom: 6,
+            paddingTop: 6,
           },
           default: {
             backgroundColor: colors.card,
             borderTopColor: colors.border,
-            height: 80,
-            paddingBottom: 8,
-            paddingTop: 8,
+            height: 68,
+            paddingBottom: 6,
+            paddingTop: 6,
           },
         }),
       }}
@@ -46,7 +46,7 @@ export default function TabLayout() {
             <IconSymbol
               ios_icon_name="house.fill"
               android_material_icon_name="home"
-              size={28}
+              size={30}
               color={color}
             />
           ),
@@ -60,7 +60,7 @@ export default function TabLayout() {
             <IconSymbol
               ios_icon_name="book.fill"
               android_material_icon_name="book"
-              size={28}
+              size={30}
               color={color}
             />
           ),
@@ -74,7 +74,7 @@ export default function TabLayout() {
             <IconSymbol
               ios_icon_name="star.fill"
               android_material_icon_name="star"
-              size={28}
+              size={30}
               color={color}
             />
           ),
@@ -88,7 +88,7 @@ export default function TabLayout() {
             <IconSymbol
               ios_icon_name="person.fill"
               android_material_icon_name="person"
-              size={28}
+              size={30}
               color={color}
             />
           ),

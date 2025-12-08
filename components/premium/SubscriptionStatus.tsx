@@ -22,14 +22,14 @@ interface SubscriptionStatusProps {
 export default function SubscriptionStatus({
   currentTier,
   onUpgrade,
-  onManageSubscription,
   onRestore,
   isLoading,
 }: SubscriptionStatusProps) {
   const shimmerAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const isIman = currentTier === 'iman';
+  const isIman = currentTier === 'iman' || currentTier === 'iman_lifetime';
+  const isIhsan = currentTier === 'ihsan';
 
   useEffect(() => {
     if (isIman) {
@@ -72,6 +72,7 @@ export default function SubscriptionStatus({
     outputRange: [0.2, 0.6],
   });
 
+  // Iman tier display
   if (isIman) {
     return (
       <Animated.View style={[{ transform: [{ scale: pulseAnim }] }]}>
@@ -96,87 +97,182 @@ export default function SubscriptionStatus({
             end={{ x: 1, y: 1 }}
             style={styles.imanBanner}
           >
-            <IconSymbol name="crown" size={24} color={colors.superUltraGoldDeep} />
+            <Text style={styles.imanBannerIcon}>👑</Text>
             <Text style={styles.imanBannerText}>✨ IMAN MEMBER ✨</Text>
-            <IconSymbol name="star" size={24} color={colors.superUltraGoldDeep} />
+            <Text style={styles.imanBannerIcon}>⭐</Text>
           </LinearGradient>
 
           <View style={styles.statusHeader}>
             <View style={styles.imanIconContainer}>
               <IconSymbol
-                name="check-circle"
+                name="checkmark.circle.fill"
                 size={40}
                 color={colors.superUltraGold}
               />
             </View>
             <View style={styles.statusInfo}>
               <Text style={styles.statusTitleIman}>
-                👑 Iman Plan 👑
+                👑 Iman - Faith 👑
               </Text>
               <Text style={styles.statusDescriptionIman}>
-                Lifetime access to all premium features!
+                {currentTier === 'iman_lifetime' 
+                  ? 'Lifetime access to all premium features!' 
+                  : 'Monthly access to all premium features!'}
               </Text>
             </View>
           </View>
 
           <View style={styles.imanPerks}>
             <View style={styles.perkItem}>
-              <IconSymbol name="infinity" size={20} color={colors.superUltraGold} />
-              <Text style={styles.perkText}>Lifetime Access</Text>
+              <IconSymbol 
+                name="infinity"
+                size={20} 
+                color={colors.superUltraGold} 
+              />
+              <Text style={styles.perkText}>
+                {currentTier === 'iman_lifetime' ? 'Lifetime' : 'Monthly'}
+              </Text>
             </View>
             <View style={styles.perkItem}>
-              <IconSymbol name="star" size={20} color={colors.superUltraGold} />
-              <Text style={styles.perkText}>8 Exclusive Features</Text>
+              <IconSymbol 
+                name="star.fill"
+                size={20} 
+                color={colors.superUltraGold} 
+              />
+              <Text style={styles.perkText}>All Features</Text>
             </View>
             <View style={styles.perkItem}>
-              <IconSymbol name="award" size={20} color={colors.superUltraGold} />
+              <IconSymbol 
+                name="award"
+                size={20} 
+                color={colors.superUltraGold} 
+              />
               <Text style={styles.perkText}>Priority Support</Text>
             </View>
           </View>
+
+          <TouchableOpacity
+            style={styles.restoreButtonIman}
+            onPress={onRestore}
+            disabled={isLoading}
+          >
+            <IconSymbol 
+              name="arrow.clockwise"
+              size={20} 
+              color={colors.superUltraGoldDeep} 
+            />
+            <Text style={styles.restoreButtonTextIman}>Restore Purchases</Text>
+          </TouchableOpacity>
         </View>
       </Animated.View>
     );
   }
 
+  // Ihsan tier display
+  if (isIhsan) {
+    return (
+      <View style={styles.subscriptionStatusIhsan}>
+        <LinearGradient
+          colors={[colors.primary, colors.accent]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.ihsanBanner}
+        >
+          <Text style={styles.ihsanBannerIcon}>⭐</Text>
+          <Text style={styles.ihsanBannerText}>⭐ IHSAN MEMBER ⭐</Text>
+          <Text style={styles.ihsanBannerIcon}>⭐</Text>
+        </LinearGradient>
+
+        <View style={styles.statusHeader}>
+          <View style={styles.ihsanIconContainer}>
+            <IconSymbol
+              name="checkmark.circle.fill"
+              size={36}
+              color={colors.primary}
+            />
+          </View>
+          <View style={styles.statusInfo}>
+            <Text style={styles.statusTitleIhsan}>
+              ⭐ Ihsan - Excellence ⭐
+            </Text>
+            <Text style={styles.statusDescriptionIhsan}>
+              Thank you for your support!
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.ihsanPerks}>
+          <View style={styles.perkItem}>
+            <IconSymbol 
+              name="checkmark.circle.fill"
+              size={18} 
+              color={colors.primary} 
+            />
+            <Text style={styles.perkTextIhsan}>7 Features</Text>
+          </View>
+          <View style={styles.perkItem}>
+            <IconSymbol 
+              name="heart.fill"
+              size={18} 
+              color={colors.primary} 
+            />
+            <Text style={styles.perkTextIhsan}>Premium Access</Text>
+          </View>
+          <View style={styles.perkItem}>
+            <IconSymbol 
+              name="sparkles"
+              size={18} 
+              color={colors.primary} 
+            />
+            <Text style={styles.perkTextIhsan}>Excellence</Text>
+          </View>
+        </View>
+
+        <TouchableOpacity
+          style={styles.restoreButtonIhsan}
+          onPress={onRestore}
+          disabled={isLoading}
+        >
+          <IconSymbol 
+            name="arrow.clockwise"
+            size={20} 
+            color={colors.primary} 
+          />
+          <Text style={styles.restoreButtonTextIhsan}>Restore Purchases</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Free tier display
   return (
     <View style={styles.subscriptionStatus}>
       <View style={styles.statusHeader}>
         <IconSymbol
-          name={currentTier === 'free' ? 'lock' : 'check-circle'}
+          name="lock.fill"
           size={32}
-          color={currentTier === 'free' ? colors.textSecondary : colors.primary}
+          color={colors.textSecondary}
         />
         <View style={styles.statusInfo}>
-          <Text style={styles.statusTitle}>
-            {currentTier === 'free' ? 'Free Plan' : `${currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Plan`}
-          </Text>
+          <Text style={styles.statusTitle}>Free Plan</Text>
           <Text style={styles.statusDescription}>
-            {currentTier === 'free'
-              ? 'Upgrade to unlock premium features'
-              : 'Thank you for your support!'}
+            Upgrade to unlock premium features
           </Text>
         </View>
       </View>
 
       <View style={styles.buttonRow}>
-        {currentTier === 'free' ? (
-          <TouchableOpacity
-            style={styles.upgradeButton}
-            onPress={onUpgrade}
-          >
-            <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
-            <IconSymbol name="arrow-forward" size={20} color={colors.card} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={styles.restoreButton}
-            onPress={onRestore}
-            disabled={isLoading}
-          >
-            <IconSymbol name="refresh" size={20} color={colors.primary} />
-            <Text style={styles.restoreButtonText}>Restore Purchases</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.upgradeButton}
+          onPress={onUpgrade}
+        >
+          <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+          <IconSymbol 
+            name="arrow.right"
+            size={20} 
+            color={colors.card} 
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -192,6 +288,18 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     boxShadow: `0 4px 8px ${colors.shadow}`,
     elevation: 3,
+  },
+  subscriptionStatusIhsan: {
+    backgroundColor: colors.card,
+    borderRadius: 18,
+    padding: 22,
+    marginBottom: 24,
+    borderWidth: 3,
+    borderColor: colors.primary,
+    boxShadow: `0 6px 16px ${colors.primary}40`,
+    elevation: 8,
+    position: 'relative',
+    overflow: 'hidden',
   },
   subscriptionStatusIman: {
     backgroundColor: colors.superUltraGoldPale,
@@ -257,6 +365,25 @@ const styles = StyleSheet.create({
     borderColor: colors.superUltraGold,
     borderBottomRightRadius: 20,
   },
+  ihsanBanner: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 10,
+    borderRadius: 10,
+    marginBottom: 18,
+    boxShadow: `0 3px 10px ${colors.primary}50`,
+  },
+  ihsanBannerIcon: {
+    fontSize: 20,
+  },
+  ihsanBannerText: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.card,
+    letterSpacing: 1.5,
+  },
   imanBanner: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -266,6 +393,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
     boxShadow: `0 4px 12px ${colors.superUltraGold}60`,
+  },
+  imanBannerIcon: {
+    fontSize: 22,
   },
   imanBannerText: {
     fontSize: 16,
@@ -278,6 +408,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
+  },
+  ihsanIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.lightGold,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
+    boxShadow: `0 3px 10px ${colors.primary}40`,
   },
   imanIconContainer: {
     width: 64,
@@ -300,6 +441,12 @@ const styles = StyleSheet.create({
     color: colors.text,
     marginBottom: 4,
   },
+  statusTitleIhsan: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.primary,
+    marginBottom: 5,
+  },
   statusTitleIman: {
     fontSize: 22,
     fontWeight: 'bold',
@@ -311,10 +458,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
+  statusDescriptionIhsan: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
   statusDescriptionIman: {
     fontSize: 15,
     fontWeight: '600',
     color: colors.superUltraGoldDark,
+  },
+  ihsanPerks: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 18,
+    paddingVertical: 14,
+    backgroundColor: colors.lightGold,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.primary,
   },
   imanPerks: {
     flexDirection: 'row',
@@ -336,6 +498,12 @@ const styles = StyleSheet.create({
     color: colors.superUltraGoldDeep,
     textAlign: 'center',
   },
+  perkTextIhsan: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.primary,
+    textAlign: 'center',
+  },
   buttonRow: {
     flexDirection: 'row',
     gap: 12,
@@ -349,29 +517,45 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 20,
+    gap: 8,
   },
   upgradeButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
     color: colors.card,
-    marginRight: 8,
   },
-  restoreButton: {
-    flex: 1,
+  restoreButtonIhsan: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background,
-    borderRadius: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderWidth: 1,
+    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderWidth: 2,
     borderColor: colors.primary,
     gap: 8,
   },
-  restoreButtonText: {
-    fontSize: 16,
+  restoreButtonTextIhsan: {
+    fontSize: 15,
     fontWeight: '600',
     color: colors.primary,
+  },
+  restoreButtonIman: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.superUltraGoldLight,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderWidth: 2,
+    borderColor: colors.superUltraGold,
+    gap: 8,
+  },
+  restoreButtonTextIman: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.superUltraGoldDeep,
   },
 });

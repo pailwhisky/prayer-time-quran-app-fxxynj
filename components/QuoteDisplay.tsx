@@ -22,7 +22,7 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
 
   const isBeforeFirstPrayer = timing === 'before';
   const isAfterLastPrayer = timing === 'after';
-  const canUseAI = hasFeature('daily_quotes');
+  const canUseAI = hasFeature('daily_quotes') || currentTier === 'ihsan' || currentTier === 'iman' || currentTier === 'iman_lifetime';
 
   const loadQuote = useCallback(async () => {
     try {
@@ -55,9 +55,11 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
                     'faith and spirituality';
       
       const enhanced = await generateEnhancedQuranQuote(topic);
-      if (enhanced) {
+      if (enhanced && !enhanced.error) {
         setEnhancedQuote(enhanced);
         setShowEnhanced(true);
+      } else {
+        console.log('Enhanced quote not available:', enhanced);
       }
     } catch (error) {
       console.error('Error loading enhanced quote:', error);
@@ -107,7 +109,12 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
             
             <View style={styles.enhancedSection}>
               <View style={styles.enhancedHeader}>
-                <IconSymbol name="sparkles" size={16} color={colors.gold} />
+                <IconSymbol 
+                  ios_icon_name="sparkles"
+                  android_material_icon_name="auto_awesome"
+                  size={16} 
+                  color={colors.gold} 
+                />
                 <Text style={styles.enhancedLabel}>AI-Enhanced Insight</Text>
               </View>
               <Text style={styles.contextText}>{enhancedQuote.context}</Text>
@@ -157,16 +164,26 @@ export default function QuoteDisplay({ timing = 'general' }: QuoteDisplayProps) 
                   <ActivityIndicator size="small" color={colors.gold} />
                 ) : (
                   <>
-                    <IconSymbol name="sparkles" size={18} color={colors.gold} />
+                    <IconSymbol 
+                      ios_icon_name="sparkles"
+                      android_material_icon_name="auto_awesome"
+                      size={18} 
+                      color={colors.gold} 
+                    />
                     <Text style={styles.enhanceButtonText}>Get AI Insights</Text>
                   </>
                 )}
               </TouchableOpacity>
             ) : (
               <View style={styles.premiumPrompt}>
-                <IconSymbol name="lock.fill" size={16} color={colors.textSecondary} />
+                <IconSymbol 
+                  ios_icon_name="lock.fill"
+                  android_material_icon_name="lock"
+                  size={16} 
+                  color={colors.textSecondary} 
+                />
                 <Text style={styles.premiumPromptText}>
-                  AI insights available with Premium subscription
+                  AI insights available with Ihsan or Iman subscription
                 </Text>
               </View>
             )}
@@ -400,5 +417,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     fontStyle: 'italic',
+    textAlign: 'center',
   },
 });

@@ -25,7 +25,12 @@ export default function FeatureCard({ feature, onPress }: FeatureCardProps) {
       onPress={() => onPress(feature)}
     >
       <View style={[styles.featureIcon, { backgroundColor: `${feature.color}20` }]}>
-        <IconSymbol name={feature.icon} size={32} color={feature.color} />
+        <IconSymbol 
+          ios_icon_name={feature.icon} 
+          android_material_icon_name={feature.icon} 
+          size={32} 
+          color={feature.color} 
+        />
       </View>
 
       <View style={styles.featureInfo}>
@@ -33,21 +38,36 @@ export default function FeatureCard({ feature, onPress }: FeatureCardProps) {
           <Text style={styles.featureTitle}>{feature.title}</Text>
           {isIman && (
             <View style={styles.imanBadge}>
-              <IconSymbol name="crown" size={12} color={colors.superUltraGoldDeep} />
-              <Text style={styles.imanBadgeText}>IMAN</Text>
+              <IconSymbol 
+                ios_icon_name="crown.fill" 
+                android_material_icon_name="workspace_premium" 
+                size={14} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.imanBadgeText}>Iman</Text>
             </View>
           )}
           {isIhsan && (
             <View style={styles.ihsanBadge}>
-              <IconSymbol name="star" size={12} color={colors.card} />
-              <Text style={styles.ihsanBadgeText}>IHSAN</Text>
+              <IconSymbol 
+                ios_icon_name="star.fill" 
+                android_material_icon_name="star" 
+                size={14} 
+                color="#FFFFFF" 
+              />
+              <Text style={styles.ihsanBadgeText}>Ihsan</Text>
             </View>
           )}
         </View>
         <Text style={styles.featureDescription}>{feature.description}</Text>
       </View>
 
-      <IconSymbol name="chevron-right" size={24} color={colors.textSecondary} />
+      <IconSymbol 
+        ios_icon_name="chevron.right" 
+        android_material_icon_name="chevron_right" 
+        size={24} 
+        color={colors.textSecondary} 
+      />
     </TouchableOpacity>
   );
 }
@@ -80,6 +100,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 4,
     gap: 8,
+    flexWrap: 'wrap',
   },
   featureTitle: {
     fontSize: 16,
@@ -90,29 +111,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.superUltraGold,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     gap: 4,
+    borderWidth: 1,
+    borderColor: colors.superUltraGoldDark,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
+    elevation: 3,
   },
   imanBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: colors.superUltraGoldDeep,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   ihsanBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.primary,
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     gap: 4,
+    borderWidth: 1,
+    borderColor: colors.accent,
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
+    elevation: 3,
   },
   ihsanBadgeText: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
-    color: colors.card,
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   featureDescription: {
     fontSize: 14,

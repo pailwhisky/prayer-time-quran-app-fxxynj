@@ -14,10 +14,42 @@ interface PremiumGateProps {
   showUpgradePrompt?: boolean;
 }
 
+const getTierDisplayName = (tier: string): string => {
+  const tierMap: { [key: string]: string } = {
+    'free': 'Free',
+    'ihsan': 'Ihsan',
+    'iman': 'Iman',
+    'iman_lifetime': 'Iman Lifetime',
+    'premium': 'Ihsan',
+    'ultra': 'Iman',
+  };
+  return tierMap[tier.toLowerCase()] || tier.charAt(0).toUpperCase() + tier.slice(1);
+};
+
+const getTierBadgeStyle = (tier: string) => {
+  const lowerTier = tier.toLowerCase();
+  if (lowerTier === 'iman' || lowerTier === 'iman_lifetime' || lowerTier === 'ultra') {
+    return {
+      backgroundColor: colors.superUltraGold,
+      borderColor: colors.superUltraGoldDark,
+    };
+  }
+  if (lowerTier === 'ihsan' || lowerTier === 'premium') {
+    return {
+      backgroundColor: colors.primary,
+      borderColor: colors.accent,
+    };
+  }
+  return {
+    backgroundColor: colors.highlight,
+    borderColor: colors.border,
+  };
+};
+
 export default function PremiumGate({
   featureKey,
   featureName = 'This feature',
-  requiredTier = 'premium',
+  requiredTier = 'ihsan',
   children,
   showUpgradePrompt = true,
 }: PremiumGateProps) {
@@ -38,26 +70,50 @@ export default function PremiumGate({
     return null;
   }
 
+  const tierDisplayName = getTierDisplayName(actualRequiredTier);
+  const currentTierDisplayName = getTierDisplayName(currentTier);
+  const badgeStyle = getTierBadgeStyle(actualRequiredTier);
+
   return (
     <>
       <View style={styles.container}>
         <View style={styles.lockIcon}>
-          <IconSymbol name="lock" size={32} color={colors.highlight} />
+          <IconSymbol 
+            ios_icon_name="lock.fill" 
+            android_material_icon_name="lock" 
+            size={32} 
+            color={colors.highlight} 
+          />
         </View>
+        
+        <View style={[styles.tierBadge, badgeStyle]}>
+          <IconSymbol 
+            ios_icon_name={actualRequiredTier.toLowerCase().includes('iman') ? 'crown.fill' : 'star.fill'}
+            android_material_icon_name={actualRequiredTier.toLowerCase().includes('iman') ? 'workspace_premium' : 'star'}
+            size={16} 
+            color="#FFFFFF" 
+          />
+          <Text style={styles.tierBadgeText}>{tierDisplayName}</Text>
+        </View>
+
         <Text style={styles.title}>Premium Feature</Text>
         <Text style={styles.description}>
-          {featureName} is available with{' '}
-          {actualRequiredTier.charAt(0).toUpperCase() + actualRequiredTier.slice(1)} subscription
+          {featureName} is available with {tierDisplayName} subscription
         </Text>
         <TouchableOpacity
           style={styles.upgradeButton}
           onPress={() => setShowSubscriptionModal(true)}
         >
-          <IconSymbol name="star" size={20} color={colors.card} />
-          <Text style={styles.upgradeButtonText}>Upgrade Now</Text>
+          <IconSymbol 
+            ios_icon_name="star.fill" 
+            android_material_icon_name="star" 
+            size={20} 
+            color={colors.card} 
+          />
+          <Text style={styles.upgradeButtonText}>Upgrade to {tierDisplayName}</Text>
         </TouchableOpacity>
         <Text style={styles.currentTier}>
-          Current plan: {currentTier.charAt(0).toUpperCase() + currentTier.slice(1)}
+          Current plan: {currentTierDisplayName}
         </Text>
       </View>
 
@@ -86,7 +142,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.highlight + '20',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 16,
+  },
+  tierBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 2,
+    marginBottom: 16,
+    boxShadow: '0px 2px 8px rgba(0, 0, 0, 0.15)',
+    elevation: 4,
+  },
+  tierBadgeText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    letterSpacing: 0.5,
   },
   title: {
     fontSize: 24,
@@ -110,6 +184,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     gap: 8,
+    boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.2)',
+    elevation: 6,
   },
   upgradeButtonText: {
     fontSize: 18,

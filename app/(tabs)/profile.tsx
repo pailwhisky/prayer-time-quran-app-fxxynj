@@ -22,6 +22,7 @@ import IslamicChatbot from '@/components/IslamicChatbot';
 import SadaqahDonation from '@/components/SadaqahDonation';
 import NavigationHeader from '@/components/NavigationHeader';
 import AdvancedNotifications from '@/components/AdvancedNotifications';
+import MenstrualModeCard from '@/components/MenstrualModeCard';
 
 export default function ProfileScreen() {
   const [showHadith, setShowHadith] = useState(false);
@@ -123,7 +124,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <Stack.Screen options={{ headerShown: false }} />
-      
+
       <NavigationHeader
         title="Profile & Settings"
         showBack={false}
@@ -219,6 +220,9 @@ export default function ProfileScreen() {
             </View>
             <IconSymbol name="chevron.right" size={24} color={colors.textSecondary} />
           </Pressable>
+
+          {/* Menstrual Mode - Discrete placement */}
+          <MenstrualModeCard />
         </View>
 
         <View style={styles.section}>

@@ -1,5 +1,12 @@
 
 import { supabase } from '@/app/integrations/supabase/client';
+import {
+  withRetry,
+  classifyError,
+  logError,
+  ErrorCategory,
+  AppError
+} from '@/utils/errorHandler';
 
 /**
  * AI Service - Premium Feature
@@ -16,75 +23,150 @@ import { supabase } from '@/app/integrations/supabase/client';
  * - Subscription-based access control
  */
 
-const AI_SERVICE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL 
+const AI_SERVICE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL
   ? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/ai-service`
   : '';
 
+// Premium feature response type
+interface PremiumRequiredResponse {
+  error: 'premium_required';
+  message: string;
+  required_tier?: string;
+  current_tier?: string;
+}
+
+function isPremiumRequired(response: unknown): response is PremiumRequiredResponse {
+  return typeof response === 'object' && response !== null &&
+    (response as any).error === 'premium_required';
+}
+
 /**
- * Call our backend AI service
+ * Call our backend AI service with retry logic
  * The backend handles authentication, subscription verification, and API key management
  */
-async function callAIService(type: string, payload?: any): Promise<any> {
+async function callAIService(type: string, payload?: Record<string, unknown>): Promise<unknown> {
+  // Early validation
+  if (!AI_SERVICE_URL) {
+    console.error('❌ AI service URL not configured');
+    return null;
+  }
+
+  // Get the current session token
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    console.warn('⚠️ User not authenticated. AI features require login.');
+    return null;
+  }
+
   try {
-    if (!AI_SERVICE_URL) {
-      console.error('❌ AI service URL not configured');
-      return null;
-    }
+    // Use retry wrapper for transient failures
+    const result = await withRetry(
+      async () => {
+        const response = await fetch(AI_SERVICE_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ type, payload }),
+        });
 
-    // Get the current session token
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (!session) {
-      console.warn('⚠️ User not authenticated. AI features require login.');
-      return null;
-    }
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
 
-    const response = await fetch(AI_SERVICE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
+          // Handle premium feature error - don't retry
+          if (response.status === 403) {
+            console.warn(`⚠️ Premium feature: ${errorData.message}`);
+            return {
+              error: 'premium_required',
+              message: errorData.message,
+              required_tier: errorData.required_tier,
+              current_tier: errorData.current_tier,
+            };
+          }
+
+          // Throw for retry logic to handle
+          throw new Error(errorData.error || `HTTP ${response.status}: AI service error`);
+        }
+
+        return response.json();
       },
-      body: JSON.stringify({ type, payload }),
-    });
+      3,    // max retries
+      1000, // base delay
+      `geminiService.callAIService(${type})`
+    );
 
-    if (!response.ok) {
-      const error = await response.json();
-      
-      // Handle premium feature error
-      if (response.status === 403) {
-        console.warn(`⚠️ Premium feature: ${error.message}`);
-        return {
-          error: 'premium_required',
-          message: error.message,
-          required_tier: error.required_tier,
-          current_tier: error.current_tier,
-        };
-      }
-      
-      throw new Error(error.error || 'AI service error');
-    }
-
-    const data = await response.json();
     console.log(`✅ AI service response received for type: ${type}`);
-    return data;
+    return result;
   } catch (error) {
-    console.error(`❌ Error calling AI service (${type}):`, error);
+    // Error was already logged by withRetry
+    if (error instanceof Error || (error as AppError).category) {
+      const classified = (error as AppError).category ? error as AppError : classifyError(error);
+      logError(`geminiService.callAIService(${type})`, classified);
+    }
     return null;
   }
 }
 
-export const generateEnhancedQuranQuote = async (topic: string = 'faith and spirituality'): Promise<any> => {
+// Response type interfaces for type safety
+interface AIServiceResponse {
+  error?: 'premium_required';
+  message?: string;
+  required_tier?: string;
+  current_tier?: string;
+}
+
+interface QuoteResponse extends AIServiceResponse {
+  text?: string;
+  arabic?: string;
+  reference?: string;
+  context?: string;
+  reflection?: string;
+  translation?: string;
+}
+
+interface QuestionResponse extends AIServiceResponse {
+  answer?: string;
+  references?: string[];
+}
+
+interface AdviceResponse extends AIServiceResponse {
+  advice?: string;
+}
+
+interface ReflectionResponse extends AIServiceResponse {
+  reflection?: string;
+}
+
+interface DuaResponse extends AIServiceResponse {
+  dua?: string;
+}
+
+interface ContentResponse extends AIServiceResponse {
+  content?: string;
+}
+
+// Type helper to safely access response properties
+function isAIServiceResponse(value: unknown): value is AIServiceResponse {
+  return typeof value === 'object' && value !== null;
+}
+
+export const generateEnhancedQuranQuote = async (topic: string = 'faith and spirituality'): Promise<QuoteResponse | null> => {
   try {
     console.log(`🤖 Generating enhanced Quran quote about: ${topic}`);
     const result = await callAIService('quote', { topic });
-    
-    if (result?.error === 'premium_required') {
+
+    if (!isAIServiceResponse(result)) {
+      return null;
+    }
+
+    if (result.error === 'premium_required') {
       console.warn('⚠️ Premium subscription required for enhanced quotes');
       return null;
     }
-    
-    return result;
+
+    return result as QuoteResponse;
   } catch (error) {
     console.error('❌ Error generating enhanced quote:', error);
     return null;
@@ -95,22 +177,27 @@ export const askIslamicQuestion = async (question: string): Promise<{ answer: st
   try {
     console.log(`🤖 Processing Islamic question: ${question}`);
     const result = await callAIService('question', { question });
-    
-    if (result?.error === 'premium_required') {
-      return {
-        answer: `This AI assistant feature requires a ${result.required_tier} subscription. Please upgrade to access personalized Islamic guidance.`,
-        references: []
-      };
-    }
-    
-    if (!result) {
+
+    if (!isAIServiceResponse(result)) {
       return {
         answer: 'AI service is currently unavailable. Please try again later.',
         references: []
       };
     }
-    
-    return result;
+
+    const typedResult = result as QuestionResponse;
+
+    if (typedResult.error === 'premium_required') {
+      return {
+        answer: `This AI assistant feature requires a ${typedResult.required_tier || 'premium'} subscription. Please upgrade to access personalized Islamic guidance.`,
+        references: []
+      };
+    }
+
+    return {
+      answer: typedResult.answer || 'AI service is currently unavailable. Please try again later.',
+      references: typedResult.references || []
+    };
   } catch (error) {
     console.error('❌ Error asking Islamic question:', error);
     return {
@@ -120,16 +207,20 @@ export const askIslamicQuestion = async (question: string): Promise<{ answer: st
   }
 };
 
-export const generateDailyHadith = async (): Promise<any> => {
+export const generateDailyHadith = async (): Promise<AIServiceResponse | null> => {
   try {
     console.log('🤖 Generating daily Hadith');
     const result = await callAIService('hadith');
-    
-    if (result?.error === 'premium_required') {
+
+    if (!isAIServiceResponse(result)) {
+      return null;
+    }
+
+    if (result.error === 'premium_required') {
       console.warn('⚠️ Premium subscription required for AI-generated Hadith');
       return null;
     }
-    
+
     return result;
   } catch (error) {
     console.error('❌ Error generating daily hadith:', error);
@@ -137,7 +228,7 @@ export const generateDailyHadith = async (): Promise<any> => {
   }
 };
 
-export const analyzeRecitation = async (audioData: string): Promise<any> => {
+export const analyzeRecitation = async (audioData: string): Promise<AIServiceResponse | null> => {
   try {
     console.log('🤖 Analyzing recitation');
     // Note: This feature requires ultra subscription and audio processing
@@ -146,7 +237,7 @@ export const analyzeRecitation = async (audioData: string): Promise<any> => {
       error: 'premium_required',
       message: 'AI recitation analysis requires an Ultra subscription',
       required_tier: 'ultra'
-    };
+    } as AIServiceResponse;
   } catch (error) {
     console.error('❌ Error analyzing recitation:', error);
     return null;
@@ -157,16 +248,18 @@ export const generateSpiritualAdvice = async (context: string): Promise<string> 
   try {
     console.log(`🤖 Generating spiritual advice for: ${context}`);
     const result = await callAIService('advice', { context });
-    
-    if (result?.error === 'premium_required') {
-      return `This spiritual guidance feature requires a ${result.required_tier} subscription. Please upgrade to access personalized Islamic advice.`;
-    }
-    
-    if (!result?.advice) {
+
+    if (!isAIServiceResponse(result)) {
       return 'AI service is currently unavailable. Please try again later.';
     }
-    
-    return result.advice;
+
+    const typedResult = result as AdviceResponse;
+
+    if (typedResult.error === 'premium_required') {
+      return `This spiritual guidance feature requires a ${typedResult.required_tier || 'premium'} subscription. Please upgrade to access personalized Islamic advice.`;
+    }
+
+    return typedResult.advice || 'AI service is currently unavailable. Please try again later.';
   } catch (error) {
     console.error('❌ Error generating spiritual advice:', error);
     return 'Unable to generate advice at this time. Please try again later.';
@@ -174,42 +267,50 @@ export const generateSpiritualAdvice = async (context: string): Promise<string> 
 };
 
 export const generatePrayerReflection = async (prayerName: string): Promise<string> => {
+  const defaultReflection = `${prayerName} is a blessed time to connect with Allah. May your prayer be accepted.`;
+
   try {
     console.log(`🤖 Generating prayer reflection for: ${prayerName}`);
     const result = await callAIService('prayer_reflection', { prayerName });
-    
-    if (result?.error === 'premium_required') {
-      return `${prayerName} is a blessed time to connect with Allah. May your prayer be accepted.`;
+
+    if (!isAIServiceResponse(result)) {
+      return defaultReflection;
     }
-    
-    if (!result?.reflection) {
-      return `${prayerName} is a blessed time to connect with Allah. May your prayer be accepted.`;
+
+    const typedResult = result as ReflectionResponse;
+
+    if (typedResult.error === 'premium_required') {
+      return defaultReflection;
     }
-    
-    return result.reflection;
+
+    return typedResult.reflection || defaultReflection;
   } catch (error) {
     console.error('❌ Error generating prayer reflection:', error);
-    return `${prayerName} is a blessed time to connect with Allah. May your prayer be accepted.`;
+    return defaultReflection;
   }
 };
 
 export const generatePersonalizedDua = async (need: string): Promise<string> => {
+  const defaultDua = 'May Allah grant you what is best for you in this life and the hereafter. Ameen.';
+
   try {
     console.log(`🤖 Generating personalized dua for: ${need}`);
     const result = await callAIService('dua', { need });
-    
-    if (result?.error === 'premium_required') {
-      return 'May Allah grant you what is best for you in this life and the hereafter. Ameen.';
+
+    if (!isAIServiceResponse(result)) {
+      return defaultDua;
     }
-    
-    if (!result?.dua) {
-      return 'May Allah grant you what is best for you in this life and the hereafter. Ameen.';
+
+    const typedResult = result as DuaResponse;
+
+    if (typedResult.error === 'premium_required') {
+      return defaultDua;
     }
-    
-    return result.dua;
+
+    return typedResult.dua || defaultDua;
   } catch (error) {
     console.error('❌ Error generating personalized dua:', error);
-    return 'May Allah grant you what is best for you in this life and the hereafter. Ameen.';
+    return defaultDua;
   }
 };
 
@@ -220,12 +321,12 @@ export const generateIslamicQuiz = async (
   try {
     console.log(`🤖 Generating Islamic quiz - Topic: ${topic}, Difficulty: ${difficulty}`);
     const result = await callAIService('quiz', { topic, difficulty });
-    
+
     if (result?.error === 'premium_required') {
       console.warn('⚠️ Premium subscription required for AI-generated quizzes');
       return null;
     }
-    
+
     return result;
   } catch (error) {
     console.error('❌ Error generating Islamic quiz:', error);
@@ -239,15 +340,15 @@ export const generateRamadanContent = async (
   try {
     console.log(`🤖 Generating Ramadan content for: ${type}`);
     const result = await callAIService('ramadan', { type });
-    
+
     if (result?.error === 'premium_required') {
       return 'May Allah accept your fasting and prayers during this blessed month. Ramadan Mubarak!';
     }
-    
+
     if (!result?.content) {
       return 'May Allah accept your fasting and prayers during this blessed month. Ramadan Mubarak!';
     }
-    
+
     return result.content;
   } catch (error) {
     console.error('❌ Error generating Ramadan content:', error);
@@ -262,20 +363,20 @@ export const generateRamadanContent = async (
 export const testGeminiConnection = async (): Promise<boolean> => {
   try {
     console.log('🧪 Testing AI service connection...');
-    
+
     // Simple test to check if service is available
     const result = await callAIService('quote', { topic: 'test' });
-    
+
     if (result?.error === 'premium_required') {
       console.log('⚠️ AI service requires premium subscription');
       return false;
     }
-    
+
     if (result) {
       console.log('✅ AI service connection test successful');
       return true;
     }
-    
+
     console.error('❌ AI service not available');
     return false;
   } catch (error) {

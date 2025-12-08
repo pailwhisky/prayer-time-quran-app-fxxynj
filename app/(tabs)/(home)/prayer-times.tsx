@@ -3,13 +3,18 @@ import QiblaCompass from '@/components/QiblaCompass';
 import NavigationHeader from '@/components/NavigationHeader';
 import QuoteDisplay from '@/components/QuoteDisplay';
 import PrayerTimeItem from '@/components/PrayerTimeItem';
+import DailyGoals from '@/components/DailyGoals';
+import PrayerCountdown from '@/components/PrayerCountdown';
+import RamadanCountdown from '@/components/RamadanCountdown';
+import PrayerStats from '@/components/PrayerStats';
 import * as Location from 'expo-location';
 import * as Linking from 'expo-linking';
 import { PrayerCalculator, PrayerTimesData, PrayerTime } from '@/utils/prayerTimes';
+import { GoalsService } from '@/utils/goalsService';
 import { colors } from '@/styles/commonStyles';
 import { Stack, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import * as Notifications from 'expo-notifications';
 import {
   View,
@@ -20,6 +25,8 @@ import {
   RefreshControl,
   Platform,
   TouchableOpacity,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { IconSymbol } from '@/components/IconSymbol';
 
@@ -32,6 +39,32 @@ export default function PrayerTimesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [notificationPermission, setNotificationPermission] = useState(false);
+  const [prayerCompletion, setPrayerCompletion] = useState<Record<string, boolean>>({});
+
+  // Load prayer completion status on mount
+  useEffect(() => {
+    const loadCompletionStatus = async () => {
+      const status = await GoalsService.getPrayerCompletionStatus();
+      setPrayerCompletion(status);
+    };
+    loadCompletionStatus();
+  }, []);
+
+  // Handle prayer completion toggle
+  const handlePrayerToggle = useCallback(async (prayerName: string) => {
+    const prayerId = prayerName.toLowerCase();
+    const isCurrentlyComplete = prayerCompletion[prayerId];
+
+    await GoalsService.toggleGoal(prayerId);
+
+    // Optimistically update UI
+    setPrayerCompletion(prev => ({
+      ...prev,
+      [prayerId]: !isCurrentlyComplete,
+    }));
+
+    console.log(`🙏 ${prayerName} ${isCurrentlyComplete ? 'unmarked' : 'completed'}`);
+  }, [prayerCompletion]);
 
   // Add close button to header
   useEffect(() => {
@@ -61,7 +94,7 @@ export default function PrayerTimesScreen() {
 
       const prayers = PrayerCalculator.getPrayerTimesList(times);
       const now = new Date();
-      
+
       for (const prayer of prayers) {
         // Only schedule future prayers
         if (prayer.time > now) {
@@ -108,12 +141,12 @@ export default function PrayerTimesScreen() {
   const requestNotificationPermissions = useCallback(async () => {
     try {
       console.log('🔔 Requesting notification permissions...');
-      
+
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       console.log(`Current permission status: ${existingStatus}`);
-      
+
       let finalStatus = existingStatus;
-      
+
       if (existingStatus !== 'granted') {
         console.log('Requesting new permissions...');
         const { status } = await Notifications.requestPermissionsAsync({
@@ -127,7 +160,7 @@ export default function PrayerTimesScreen() {
         finalStatus = status;
         console.log(`New permission status: ${finalStatus}`);
       }
-      
+
       if (finalStatus === 'granted') {
         console.log('✅ Notification permissions granted');
         setNotificationPermission(true);
@@ -152,16 +185,16 @@ export default function PrayerTimesScreen() {
       } else {
         console.log('⚠️ Notification permissions denied');
         setNotificationPermission(false);
-        
+
         Alert.alert(
           'Notifications Disabled',
-          Platform.OS === 'ios' 
+          Platform.OS === 'ios'
             ? 'To receive prayer time reminders, please enable notifications in Settings > Notifications > Prayer Times.'
             : 'To receive prayer time reminders, please enable notifications in your device settings.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { 
-              text: 'Open Settings', 
+            {
+              text: 'Open Settings',
               onPress: () => Linking.openSettings()
             },
           ]
@@ -183,7 +216,7 @@ export default function PrayerTimesScreen() {
       console.log('📍 Requesting location permission...');
 
       const { status } = await Location.requestForegroundPermissionsAsync();
-      
+
       if (status !== 'granted') {
         setLocationError('Location permission is required to calculate accurate prayer times.');
         Alert.alert(
@@ -199,7 +232,7 @@ export default function PrayerTimesScreen() {
       const currentLocation = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      
+
       console.log('📍 Location obtained:', currentLocation.coords.latitude, currentLocation.coords.longitude);
       setLocation(currentLocation);
 
@@ -208,7 +241,7 @@ export default function PrayerTimesScreen() {
         currentLocation.coords.latitude,
         currentLocation.coords.longitude
       );
-      
+
       console.log('🕌 Prayer times calculated:', times);
       setPrayerTimes(times);
 
@@ -236,7 +269,7 @@ export default function PrayerTimesScreen() {
       const hasPermission = await requestNotificationPermissions();
       await requestLocationAndLoadPrayerTimes();
     };
-    
+
     initialize();
   }, [requestNotificationPermissions, requestLocationAndLoadPrayerTimes]);
 
@@ -248,13 +281,55 @@ export default function PrayerTimesScreen() {
     }
   }, [notificationPermission, prayerTimes, schedulePrayerNotifications]);
 
-  // Update current time every minute
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Update every minute
+  // Refs for smart timer management
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-    return () => clearInterval(timer);
+  // Smart time updates - pause when app is backgrounded to save resources
+  useEffect(() => {
+    const updateTime = () => {
+      setCurrentTime(new Date());
+    };
+
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      console.log(`📱 App state changed: ${appStateRef.current} -> ${nextAppState}`);
+
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // App came to foreground - update time immediately and restart timer
+        console.log('⏰ App resumed, updating time and restarting timer');
+        updateTime();
+        if (!timerRef.current) {
+          timerRef.current = setInterval(updateTime, 60000);
+        }
+      } else if (nextAppState.match(/inactive|background/)) {
+        // App going to background - stop the timer to save resources
+        console.log('💤 App backgrounded, pausing timer');
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }
+
+      appStateRef.current = nextAppState;
+    };
+
+    // Start the timer initially
+    timerRef.current = setInterval(updateTime, 60000);
+
+    // Listen for app state changes
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
+    return () => {
+      // Cleanup timer and listener on unmount
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      subscription.remove();
+    };
   }, []);
 
   // Recalculate next prayer when time changes (but only update if needed)
@@ -264,11 +339,11 @@ export default function PrayerTimesScreen() {
         location.coords.latitude,
         location.coords.longitude
       );
-      
+
       // Only update if the next prayer has changed
       const currentNextPrayer = PrayerCalculator.getPrayerTimesList(prayerTimes).find(p => p.isNext);
       const updatedNextPrayer = PrayerCalculator.getPrayerTimesList(updatedTimes).find(p => p.isNext);
-      
+
       if (currentNextPrayer?.name !== updatedNextPrayer?.name) {
         console.log('🔄 Next prayer changed, updating prayer times');
         setPrayerTimes(updatedTimes);
@@ -318,7 +393,7 @@ export default function PrayerTimesScreen() {
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <Stack.Screen options={screenOptions} />
         <NavigationHeader title="Prayer Times" showBack={true} showClose={false} />
-        
+
         <View style={styles.loadingContainer}>
           <View style={styles.loadingOrnament}>
             <Text style={styles.loadingIcon}>🕌</Text>
@@ -336,7 +411,7 @@ export default function PrayerTimesScreen() {
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <Stack.Screen options={screenOptions} />
         <NavigationHeader title="Prayer Times" showBack={true} showClose={false} />
-        
+
         <View style={styles.errorContainer}>
           <View style={styles.errorOrnament}>
             <Text style={styles.errorIcon}>📍</Text>
@@ -352,7 +427,7 @@ export default function PrayerTimesScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <Stack.Screen options={screenOptions} />
-      
+
       <NavigationHeader
         title="Prayer Times"
         showBack={true}
@@ -384,13 +459,13 @@ export default function PrayerTimesScreen() {
 
           <Text style={styles.currentTime}>{formatCurrentTime()}</Text>
           <Text style={styles.locationText}>{getLocationString()}</Text>
-          
+
           {!notificationPermission && (
             <View style={styles.notificationWarningContainer}>
               <Text style={styles.notificationWarning}>
                 ⚠️ Enable notifications to receive prayer reminders
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.enableButton}
                 onPress={handleEnableNotifications}
               >
@@ -416,10 +491,41 @@ export default function PrayerTimesScreen() {
           </View>
         </View>
 
+        {/* Prayer Countdown */}
+        {prayerTimes && (() => {
+          const prayerList = PrayerCalculator.getPrayerTimesList(prayerTimes);
+          const nextPrayerData = prayerList.find(p => p.isNext);
+          if (nextPrayerData) {
+            return (
+              <PrayerCountdown
+                nextPrayer={{
+                  name: nextPrayerData.name,
+                  arabicName: nextPrayerData.arabicName,
+                  time: nextPrayerData.time,
+                }}
+              />
+            );
+          }
+          return null;
+        })()}
+
         {/* Quran Quote */}
-        <QuoteDisplay 
+        <QuoteDisplay
           timing={isBeforeFirstPrayer() ? 'before' : isAfterLastPrayer() ? 'after' : 'general'}
         />
+
+        {/* Daily Goals & Streak Tracker */}
+        <DailyGoals
+          onPrayerComplete={(prayerName) => {
+            console.log(`🙏 Prayer marked complete: ${prayerName}`);
+          }}
+        />
+
+        {/* Ramadan Countdown */}
+        <RamadanCountdown />
+
+        {/* Prayer Statistics Dashboard */}
+        <PrayerStats />
 
         {/* Prayer Times List */}
         {prayerTimes && (
@@ -436,6 +542,8 @@ export default function PrayerTimesScreen() {
                 arabicName={prayer.arabicName}
                 time={prayer.time}
                 isNext={prayer.isNext}
+                isCompleted={prayerCompletion[prayer.name.toLowerCase()] || false}
+                onToggleComplete={() => handlePrayerToggle(prayer.name)}
               />
             ))}
           </View>

@@ -1,26 +1,38 @@
 
-import React, { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useCallback, memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withRepeat,
   withTiming,
   withSequence,
+  withSpring,
 } from 'react-native-reanimated';
 import { colors } from '@/styles/commonStyles';
+import { IconSymbol } from '@/components/IconSymbol';
 
 interface PrayerTimeItemProps {
   name: string;
   arabicName: string;
   time: Date;
   isNext: boolean;
+  isCompleted?: boolean;
+  onToggleComplete?: () => void;
 }
 
-export default function PrayerTimeItem({ name, arabicName, time, isNext }: PrayerTimeItemProps) {
+function PrayerTimeItemComponent({
+  name,
+  arabicName,
+  time,
+  isNext,
+  isCompleted = false,
+  onToggleComplete,
+}: PrayerTimeItemProps) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
   const glowOpacity = useSharedValue(0);
+  const checkScale = useSharedValue(isCompleted ? 1 : 0);
 
   useEffect(() => {
     if (isNext) {
@@ -33,7 +45,7 @@ export default function PrayerTimeItem({ name, arabicName, time, isNext }: Praye
         -1,
         true
       );
-      
+
       // Subtle glow effect
       glowOpacity.value = withRepeat(
         withSequence(
@@ -49,6 +61,13 @@ export default function PrayerTimeItem({ name, arabicName, time, isNext }: Praye
     }
   }, [isNext, scale, opacity, glowOpacity]);
 
+  useEffect(() => {
+    checkScale.value = withSpring(isCompleted ? 1 : 0, {
+      damping: 12,
+      stiffness: 200,
+    });
+  }, [isCompleted, checkScale]);
+
   const animatedStyle = useAnimatedStyle(() => {
     return {
       transform: [{ scale: scale.value }],
@@ -58,6 +77,13 @@ export default function PrayerTimeItem({ name, arabicName, time, isNext }: Praye
   const glowStyle = useAnimatedStyle(() => {
     return {
       opacity: glowOpacity.value,
+    };
+  });
+
+  const checkAnimStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ scale: checkScale.value }],
+      opacity: checkScale.value,
     };
   });
 
@@ -72,12 +98,12 @@ export default function PrayerTimeItem({ name, arabicName, time, isNext }: Praye
   const getTimeUntilPrayer = (time: Date): string => {
     const now = new Date();
     const diff = time.getTime() - now.getTime();
-    
+
     if (diff <= 0) return 'Passed';
-    
+
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
+
     if (hours > 0) {
       return `in ${hours}h ${minutes}m`;
     } else {
@@ -85,67 +111,112 @@ export default function PrayerTimeItem({ name, arabicName, time, isNext }: Praye
     }
   };
 
+  const isPassed = time.getTime() < Date.now();
+
+  const handlePress = () => {
+    if (onToggleComplete && isPassed) {
+      onToggleComplete();
+    }
+  };
+
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        isNext && styles.nextPrayerContainer,
-        animatedStyle,
-      ]}
+    <TouchableOpacity
+      onPress={handlePress}
+      activeOpacity={isPassed ? 0.7 : 1}
+      disabled={!isPassed || !onToggleComplete}
     >
-      {/* Glow effect for next prayer */}
-      {isNext && (
-        <Animated.View style={[styles.glowEffect, glowStyle]} />
-      )}
+      <Animated.View
+        style={[
+          styles.container,
+          isNext && styles.nextPrayerContainer,
+          isCompleted && styles.completedContainer,
+          animatedStyle,
+        ]}
+      >
+        {/* Glow effect for next prayer */}
+        {isNext && (
+          <Animated.View style={[styles.glowEffect, glowStyle]} />
+        )}
 
-      {/* Ornamental corner decorations */}
-      <View style={styles.cornerTopLeft}>
-        <Text style={styles.cornerIcon}>◆</Text>
-      </View>
-      <View style={styles.cornerTopRight}>
-        <Text style={styles.cornerIcon}>◆</Text>
-      </View>
+        {/* Completion checkmark */}
+        {isPassed && (
+          <View style={styles.checkmarkWrapper}>
+            {isCompleted ? (
+              <Animated.View style={[styles.checkmarkComplete, checkAnimStyle]}>
+                <IconSymbol name="check-circle" size={28} color={colors.primary} />
+              </Animated.View>
+            ) : (
+              <View style={styles.checkmarkEmpty}>
+                <IconSymbol name="radio-button-unchecked" size={28} color={colors.textSecondary} />
+              </View>
+            )}
+          </View>
+        )}
 
-      <View style={styles.contentWrapper}>
-        <View style={styles.leftSection}>
-          <Text style={[styles.prayerName, isNext && styles.nextPrayerText]}>
-            {name}
-          </Text>
-          <Text style={[styles.arabicName, isNext && styles.nextPrayerArabic]}>
-            {arabicName}
-          </Text>
+        {/* Ornamental corner decorations */}
+        <View style={styles.cornerTopLeft}>
+          <Text style={styles.cornerIcon}>◆</Text>
         </View>
-        
-        <View style={styles.rightSection}>
-          <Text style={[styles.time, isNext && styles.nextPrayerTime]}>
-            {formatTime(time)}
-          </Text>
-          {isNext && (
-            <Text style={styles.timeUntil}>
-              {getTimeUntilPrayer(time)}
+        <View style={styles.cornerTopRight}>
+          <Text style={styles.cornerIcon}>◆</Text>
+        </View>
+
+        <View style={styles.contentWrapper}>
+          <View style={styles.leftSection}>
+            <Text style={[
+              styles.prayerName,
+              isNext && styles.nextPrayerText,
+              isCompleted && styles.completedText,
+            ]}>
+              {name}
             </Text>
-          )}
-        </View>
-      </View>
-      
-      {isNext && (
-        <View style={styles.nextIndicator}>
-          <View style={styles.nextBadge}>
-            <Text style={styles.nextIcon}>✦</Text>
-            <Text style={styles.nextText}>NEXT</Text>
-            <Text style={styles.nextIcon}>✦</Text>
+            <Text style={[
+              styles.arabicName,
+              isNext && styles.nextPrayerArabic,
+              isCompleted && styles.completedArabic,
+            ]}>
+              {arabicName}
+            </Text>
+          </View>
+
+          <View style={styles.rightSection}>
+            <Text style={[
+              styles.time,
+              isNext && styles.nextPrayerTime,
+              isCompleted && styles.completedTimeText,
+            ]}>
+              {formatTime(time)}
+            </Text>
+            {isNext && (
+              <Text style={styles.timeUntil}>
+                {getTimeUntilPrayer(time)}
+              </Text>
+            )}
+            {isPassed && !isNext && !isCompleted && (
+              <Text style={styles.tapToComplete}>Tap to mark ✓</Text>
+            )}
           </View>
         </View>
-      )}
 
-      {/* Ornamental corner decorations */}
-      <View style={styles.cornerBottomLeft}>
-        <Text style={styles.cornerIcon}>◆</Text>
-      </View>
-      <View style={styles.cornerBottomRight}>
-        <Text style={styles.cornerIcon}>◆</Text>
-      </View>
-    </Animated.View>
+        {isNext && (
+          <View style={styles.nextIndicator}>
+            <View style={styles.nextBadge}>
+              <Text style={styles.nextIcon}>✦</Text>
+              <Text style={styles.nextText}>NEXT</Text>
+              <Text style={styles.nextIcon}>✦</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Ornamental corner decorations */}
+        <View style={styles.cornerBottomLeft}>
+          <Text style={styles.cornerIcon}>◆</Text>
+        </View>
+        <View style={styles.cornerBottomRight}>
+          <Text style={styles.cornerIcon}>◆</Text>
+        </View>
+      </Animated.View>
+    </TouchableOpacity>
   );
 }
 
@@ -283,4 +354,51 @@ const styles = StyleSheet.create({
     color: colors.gold,
     opacity: 0.6,
   },
+  // Completion tracking styles
+  completedContainer: {
+    backgroundColor: colors.primary + '15',
+    borderColor: colors.primary,
+    borderWidth: 2,
+  },
+  checkmarkWrapper: {
+    position: 'absolute',
+    left: -14,
+    top: '50%',
+    transform: [{ translateY: -14 }],
+    zIndex: 20,
+  },
+  checkmarkComplete: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 0,
+  },
+  checkmarkEmpty: {
+    backgroundColor: colors.card,
+    borderRadius: 14,
+    padding: 0,
+    opacity: 0.7,
+  },
+  completedText: {
+    color: colors.primary,
+    textDecorationLine: 'line-through',
+    opacity: 0.8,
+  },
+  completedArabic: {
+    color: colors.primary,
+    opacity: 0.6,
+  },
+  completedTimeText: {
+    color: colors.primary,
+    opacity: 0.7,
+  },
+  tapToComplete: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
 });
+
+// Memoize to prevent unnecessary re-renders in prayer list
+const PrayerTimeItem = memo(PrayerTimeItemComponent);
+export default PrayerTimeItem;

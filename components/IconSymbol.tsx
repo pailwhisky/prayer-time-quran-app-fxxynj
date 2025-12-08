@@ -191,6 +191,28 @@ const MAPPING = {
   "error": "error",
   "check-circle": "check-circle",
   "check-circle-outline": "check-circle-outline",
+  "radio-button-unchecked": "radio-button-unchecked",
+  "radio-button-checked": "radio-button-checked",
+  // DailyGoals component icons
+  "local-fire-department": "local-fire-department",
+  "sunny": "wb-sunny",
+  "wb-sunny": "wb-sunny",
+  "light-mode": "light-mode",
+  "nights-stay": "nights-stay",
+  "auto-awesome": "auto-awesome",
+  "bedtime": "bedtime",
+  "menu-book": "menu-book",
+  "mosque": "mosque",
+  "stars": "stars",
+  // SF Symbol sun and moon variants
+  "sun.horizon": "wb-twilight",
+  "sun.max.fill": "wb-sunny",
+  "sun.min": "light-mode",
+  "sun.horizon.fill": "nights-stay",
+  "moon.fill": "dark-mode",
+  "moon": "bedtime",
+  "book.fill": "menu-book",
+  "book": "menu-book",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],

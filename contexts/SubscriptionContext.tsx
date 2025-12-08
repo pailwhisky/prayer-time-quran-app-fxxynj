@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useRef } from 'react';
 import { supabase } from '@/app/integrations/supabase/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
@@ -83,6 +83,18 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Refs to prevent race conditions and state updates on unmounted component
+  const isMountedRef = useRef(true);
+  const isLoadingRef = useRef(false);
+
+  // Track mounted state for cleanup
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     initializeSubscriptionSystem();
   }, []);
@@ -97,7 +109,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
       // Initialize RevenueCat
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (user && (Platform.OS === 'ios' || Platform.OS === 'android')) {
         try {
           await initializeRevenueCat(user.id);
@@ -153,7 +165,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
       // Load user subscription for UI display
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (user) {
         const { data: subData, error: subError } = await supabase
           .from('user_subscriptions')
@@ -173,22 +185,65 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   };
 
   const loadRevenueCatEntitlements = async () => {
+    // Prevent concurrent loads
+    if (isLoadingRef.current) {
+      console.log('⏳ RevenueCat entitlements already loading, skipping...');
+      return;
+    }
+
+    isLoadingRef.current = true;
+
     try {
       console.log('Loading RevenueCat entitlements...');
-      
+
       const info = await getCustomerInfo();
+
+      // Check if component is still mounted before updating state
+      if (!isMountedRef.current) {
+        console.log('⚠️ Component unmounted, skipping state updates');
+        return;
+      }
+
       setCustomerInfo(info);
-      
+
       const parsedEntitlements = parseEntitlements(info);
       setEntitlements(parsedEntitlements);
       setCurrentTier(parsedEntitlements.tierName);
-      
+
       await AsyncStorage.setItem('subscription_tier', parsedEntitlements.tierName);
-      console.log('RevenueCat entitlements loaded:', parsedEntitlements.tierName);
+      console.log('✅ RevenueCat entitlements loaded:', parsedEntitlements.tierName);
     } catch (error) {
-      console.error('Error loading RevenueCat entitlements:', error);
-      setCurrentTier('free');
-      setEntitlements(null);
+      console.error('❌ Error loading RevenueCat entitlements:', error);
+
+      // Retry once after a delay for transient failures
+      console.log('⏳ Retrying entitlements load in 2 seconds...');
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      if (!isMountedRef.current) {
+        console.log('⚠️ Component unmounted during retry wait');
+        return;
+      }
+
+      try {
+        const retryInfo = await getCustomerInfo();
+
+        if (isMountedRef.current) {
+          setCustomerInfo(retryInfo);
+          const retryParsedEntitlements = parseEntitlements(retryInfo);
+          setEntitlements(retryParsedEntitlements);
+          setCurrentTier(retryParsedEntitlements.tierName);
+          await AsyncStorage.setItem('subscription_tier', retryParsedEntitlements.tierName);
+          console.log('✅ RevenueCat entitlements loaded on retry:', retryParsedEntitlements.tierName);
+        }
+      } catch (retryError) {
+        console.error('❌ Retry failed:', retryError);
+        if (isMountedRef.current) {
+          setCurrentTier('free');
+          setEntitlements(null);
+        }
+      }
+    } finally {
+      isLoadingRef.current = false;
     }
   };
 
@@ -200,7 +255,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
     // Fall back to database feature check
     const feature = features.find(f => f.feature_key === featureKey);
-    
+
     if (!feature) {
       console.log(`Feature ${featureKey} not found, allowing access`);
       return true; // Allow access if feature not found
@@ -244,11 +299,11 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       async (info) => {
         console.log('RevenueCat customer info updated');
         setCustomerInfo(info);
-        
+
         const parsedEntitlements = parseEntitlements(info);
         setEntitlements(parsedEntitlements);
         setCurrentTier(parsedEntitlements.tierName);
-        
+
         await AsyncStorage.setItem('subscription_tier', parsedEntitlements.tierName);
       }
     );

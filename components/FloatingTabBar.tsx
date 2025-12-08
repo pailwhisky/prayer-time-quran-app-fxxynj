@@ -195,12 +195,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tabLabel: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '800',
     color: colors.quranGreen,
     textTransform: 'capitalize',
+    letterSpacing: 0.5,
   },
   tabLabelActive: {
     color: colors.card,
+    fontSize: 20,
   },
 });

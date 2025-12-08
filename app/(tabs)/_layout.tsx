@@ -14,15 +14,26 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.textSecondary,
         headerShown: false,
         tabBarButton: HapticTab,
+        tabBarLabelStyle: {
+          fontSize: 14,
+          fontWeight: '700',
+          marginTop: 4,
+        },
         tabBarStyle: Platform.select({
           ios: {
             position: 'absolute',
             backgroundColor: colors.card,
             borderTopColor: colors.border,
+            height: 88,
+            paddingBottom: 8,
+            paddingTop: 8,
           },
           default: {
             backgroundColor: colors.card,
             borderTopColor: colors.border,
+            height: 80,
+            paddingBottom: 8,
+            paddingTop: 8,
           },
         }),
       }}
